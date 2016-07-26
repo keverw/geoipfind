@@ -1,5 +1,6 @@
 (function ()
 {
+	var inet_pton = require('./lib/inet_pton.js');
 
 	function buildDatabase(databaseLocation, options, cb, logCB)
 	{
@@ -13,7 +14,8 @@
 			del = require('delete'),
 			zip = require('cross-zip'),
 			countLinesInFile = require('count-lines-in-file'),
-			LineByLineReader = require('line-by-line');
+			LineByLineReader = require('line-by-line'),
+			ip = require('ip');
 
 		var sqlite3 = require('sqlite3').verbose();
 		//var sqlite3 = require('sqlite3');
@@ -303,8 +305,6 @@
 
 		function step2(substep)
 		{
-			console.log(substep);
-
 			//GeoLite ASN and GeoLite ASN IPv6 from http://dev.maxmind.com/geoip/legacy/geolite/
 			//Download http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum2.zip for ISP V4
 			//Download http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum2v6.zip for ISP V6
@@ -467,7 +467,7 @@
 					lbl.on('line', function(line)
 					{
 						processdLines++;
-						lineCB(processdLines, line.split(','));
+						lineCB(lbl, processdLines, line.split(','));
 					});
 
 					lbl.on('end', function()
@@ -481,37 +481,222 @@
 
 		}
 
-		function step3(substep, file)
+		var db = null;
+
+		var filesTotal = 12;
+		var filesProcessed = 0;
+
+		function step3(substep)
 		{
-			//var db = new sqlite3.Database(dbFile);
+			if (['GeoIPASNum2.csv'].indexOf(substep) > -1)
+			{
+				log('Imported files ' + filesProcessed + '/' + filesTotal);
+			}
 
-		//	console.log(GeoLite2Path); //path to current month in the folder caluated
+			if (substep == 'GeoIPASNum2.csv')
+			{
+				// log('Importing GeoIPASNum2.csv');
+				//
+				// db.run("BEGIN TRANSACTION", function(err)
+				// {
+				// 	if (err)
+				// 	{
+				// 		done(err);
+				// 	}
+				// 	else
+				// 	{
+				// 		var GeoIPASNum2_csv = path.join(unzippedFolders, 'ASN-v4', 'GeoIPASNum2.csv');
+				//
+				// 		//todo: progress bar?
+				//
+				// 		var csvFile = path.join(unzippedFolders, 'ASN-v4', 'GeoIPASNum2.csv');
+				// 		var hadErr = false;
+				//
+				// 		readCSV(
+				// 			csvFile,
+				// 			function err(err)
+				// 			{
+				// 				console.log(err);
+				// 			},
+				// 			function line(handler, lineNum, data)
+				// 			{
+				// 				if (!hadErr)
+				// 				{
+				// 					var startIP = ip.fromLong(data[0]);
+				// 					var endIP = ip.fromLong(data[1]);
+				// 					var AS_Str = data[2].slice(1, -1).split(' ');
+				//
+				// 					var AS_Num = AS_Str.shift();
+				// 					var ISPName = AS_Str.join(' ');
+				//
+				// 					db.run("INSERT INTO asn VALUES (?)", [  ], function(err)
+				// 					{
+				// 						if (err)
+				// 						{
+				// 							hadErr = true;
+				// 							handler.close();
+				// 							done(err);
+				// 						}
+				//
+				// 					});
+				//
+				// 					console.log(lineNum, startIP, endIP, AS_Num, ISPName);
+				// 				}
+				// 			},
+				// 			function end()
+				// 			{
+				// 				if (!hadErr)
+				// 				{
+				// 					console.log('end');
+				// 				}
+				//
+				// 			},
+				// 			function count(num)
+				// 			{
+				// 				console.log(num);
+				// 			}
+				// 		);
+				//
+				// 	}
+				//
+				// });
 
-			//path.join(unzippedFolders, 'ASN-v4', 'GeoIPASNum2.csv')
-			var csvFile = path.join(unzippedFolders, 'ASN-v4', 'GeoIPASNum2.csv');
+			}
+			else
+			{
 
-			readCSV(
-				csvFile,
-				function err(err)
+				if (!db)
 				{
-					console.log(err);
-				},
-				function line(lineNum, data)
-				{
-					console.log(lineNum, data);
-				},
-				function end()
-				{
-					console.log('end');
-				},
-				function count(num)
-				{
-					console.log(num);
+					log('Creating database and tables');
+					db = new sqlite3.Database(dbFile);
+
+					
+
+					//Create tables
+					db.run('CREATE TABLE `asn` (\
+						`start`	BLOB,\
+						`end`	BLOB,\
+						`version`	INTEGER,\
+						`as_num`	TEXT,\
+						`name`	TEXT,\
+						PRIMARY KEY(start,end)\
+					);', function(err)
+					{
+						if (err)
+						{
+							done(err)
+						}
+						else
+						{
+							db.run('CREATE TABLE `geo_blocks` (\
+								`start`	BLOB,\
+								`end`	BLOB,\
+								`version`	INTEGER,\
+								`geoname_id`	INTEGER,\
+								`registered_country_geoname_id`	INTEGER,\
+								`represented_country_geoname_id`	INTEGER,\
+								`is_anonymous_proxy`	INTEGER,\
+								`is_satellite_provider`	INTEGER,\
+								`postal_code`	TEXT,\
+								`latitude`	NUMERIC,\
+								`longitude`	NUMERIC,\
+								`accuracy_radius`	INTEGER,\
+								PRIMARY KEY(start,end)\
+							);', function(err)
+							{
+								if (err)
+								{
+									done(err);
+								}
+								else
+								{
+
+									db.run('CREATE TABLE `geo_names` (\
+										`geoname_id`	INTEGER,\
+										`locale_code`	TEXT,\
+										`continent_code`	TEXT,\
+										`country_iso_code`	TEXT,\
+										`subdivision_1_iso_code`	TEXT,\
+										`subdivision_2_iso_code`	TEXT,\
+										`metro_code`	TEXT,\
+										`time_zone`	TEXT,\
+										PRIMARY KEY(geoname_id)\
+									);', function(err)
+									{
+										if (err)
+										{
+											done(err);
+										}
+										else
+										{
+
+											db.run('CREATE TABLE `lang` (\
+												`field`	TEXT,\
+												`code`	TEXT,\
+												`de`	TEXT,\
+												`en`	TEXT,\
+												`es`	TEXT,\
+												`fr`	INTEGER,\
+												`ja`	INTEGER,\
+												`pt-BR`	INTEGER,\
+												`ru`	INTEGER,\
+												`zh-CN`	INTEGER,\
+												PRIMARY KEY(field,code)\
+											);', function(err)
+											{
+												if (err)
+												{
+													done(err);
+												}
+												else
+												{
+													step3('GeoIPASNum2.csv');
+												}
+
+											});
+
+										}
+
+									});
+
+								}
+
+							});
+
+						}
+
+					});
+
 				}
-		);
 
+			}
 
-			console.log(substep);
+			// console.log(GeoLite2Path); //path to current month in the folder caluated
+
+		// 	var csvFile = path.join(unzippedFolders, 'ASN-v4', 'GeoIPASNum2.csv');
+		//
+		// 	readCSV(
+		// 		csvFile,
+		// 		function err(err)
+		// 		{
+		// 			console.log(err);
+		// 		},
+		// 		function line(lineNum, data)
+		// 		{
+		// 			console.log(lineNum, data);
+		// 		},
+		// 		function end()
+		// 		{
+		// 			console.log('end');
+		// 		},
+		// 		function count(num)
+		// 		{
+		// 			console.log(num);
+		// 		}
+		// );
+		//
+		//
+		// 	console.log(substep);
 
 //			console.log('step 3 later');
 
