@@ -246,20 +246,24 @@
 
 		function unzipFile(filename, path, outputPath, cb)
 		{
-			fs.stat(dbFile, function(err, stats)
+			fs.stat(outputPath, function(err, stats)
 			{
-
 				if (err)
 				{
 					if (err.code == 'ENOENT') //go on
 					{
-						log('Unzipping ' + filename);
-						var start = new Date();
-
 						mkdirp(outputPath, function (err)
 						{
 							if (err)
 							{
+								cb(err);
+							}
+							else
+							{
+								log('Unzipping ' + filename);
+
+								var start = new Date();
+
 								zip.unzip(path, outputPath, function(err)
 								{
 									if (err)
@@ -277,10 +281,6 @@
 								});
 
 							}
-							else
-							{
-								cb(err);
-							}
 
 						});
 
@@ -293,6 +293,7 @@
 				}
 				else //already unzipped
 				{
+					log(filename + ' already unzipped');
 					cb(null);
 				}
 
