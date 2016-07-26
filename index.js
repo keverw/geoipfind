@@ -2,6 +2,7 @@
 {
 	var inet_pton = require('./lib/inet_pton.js');
 	var createSchema = require('./lib/createSchema.js');
+	var importASN = require('./lib/importASN.js');
 
 	function buildDatabase(databaseLocation, options, cb, logCB)
 	{
@@ -14,8 +15,6 @@
 			humanizeDuration = require('humanize-duration'),
 			del = require('delete'),
 			zip = require('cross-zip'),
-			countLinesInFile = require('count-lines-in-file'),
-			LineByLineReader = require('line-by-line'),
 			ip = require('ip');
 
 		var sqlite3 = require('sqlite3').verbose();
@@ -444,44 +443,6 @@
 
 		}
 
-		function readCSV(file, errCB, lineCB, endCB, countCB)
-		{
-			var processdLines = 0;
-
-			countLinesInFile(file, function(err, num)
-			{
-				if (err)
-				{
-					errCB(err);
-				}
-				else
-				{
-					countCB(num);
-
-					var lbl = new LineByLineReader(file);
-
-					lbl.on('error', function(err)
-					{
-						errCB(err);
-					});
-
-					lbl.on('line', function(line)
-					{
-						processdLines++;
-						lineCB(lbl, processdLines, line.split(','));
-					});
-
-					lbl.on('end', function()
-					{
-						endCB();
-					});
-
-				}
-
-			});
-
-		}
-
 		var db = null;
 
 		var filesTotal = 12;
@@ -496,72 +457,37 @@
 
 			if (substep == 'GeoIPASNum2.csv')
 			{
-				// log('Importing GeoIPASNum2.csv');
-				//
-				// db.run("BEGIN TRANSACTION", function(err)
-				// {
-				// 	if (err)
-				// 	{
-				// 		done(err);
-				// 	}
-				// 	else
-				// 	{
-				// 		var GeoIPASNum2_csv = path.join(unzippedFolders, 'ASN-v4', 'GeoIPASNum2.csv');
-				//
-				// 		//todo: progress bar?
-				//
-				// 		var csvFile = path.join(unzippedFolders, 'ASN-v4', 'GeoIPASNum2.csv');
-				// 		var hadErr = false;
-				//
-				// 		readCSV(
-				// 			csvFile,
-				// 			function err(err)
-				// 			{
-				// 				console.log(err);
-				// 			},
-				// 			function line(handler, lineNum, data)
-				// 			{
-				// 				if (!hadErr)
-				// 				{
-				// 					var startIP = ip.fromLong(data[0]);
-				// 					var endIP = ip.fromLong(data[1]);
-				// 					var AS_Str = data[2].slice(1, -1).split(' ');
-				//
-				// 					var AS_Num = AS_Str.shift();
-				// 					var ISPName = AS_Str.join(' ');
-				//
-				// 					db.run("INSERT INTO asn VALUES (?)", [  ], function(err)
-				// 					{
-				// 						if (err)
-				// 						{
-				// 							hadErr = true;
-				// 							handler.close();
-				// 							done(err);
-				// 						}
-				//
-				// 					});
-				//
-				// 					console.log(lineNum, startIP, endIP, AS_Num, ISPName);
-				// 				}
-				// 			},
-				// 			function end()
-				// 			{
-				// 				if (!hadErr)
-				// 				{
-				// 					console.log('end');
-				// 				}
-				//
-				// 			},
-				// 			function count(num)
-				// 			{
-				// 				console.log(num);
-				// 			}
-				// 		);
-				//
-				// 	}
-				//
-				// });
+				var GeoIPASNum2_csv = path.join(unzippedFolders, 'ASN-v4', 'GeoIPASNum2.csv');
 
+				log('Importing GeoIPASNum2.csv');
+
+				importASN(db, log, options.verbose, GeoIPASNum2_csv, 4, function(err)
+				{
+					if (err)
+					{
+						console.log(err);
+
+						//todo: make a function to close DB on error
+						done(err);
+					}
+					else
+					{
+						filesProcessed++;
+						step3('GeoIPASNum2v6.csv');
+					}
+
+				});
+
+			}
+			else if (substep == 'GeoIPASNum2v6.csv')
+			{
+				var GeoIPASNum2v6_csv = path.join(unzippedFolders, 'ASN-v6', 'GeoIPASNum2v6.csv');
+
+				importASN(db, log, options.verbose, GeoIPASNum2v6_csv, 6, function(err)
+				{
+					console.log(err);
+				});
+				
 			}
 			else
 			{
