@@ -450,7 +450,7 @@
 
 		function step3(substep)
 		{
-			if (['GeoIPASNum2.csv'].indexOf(substep) > -1)
+			if (['GeoIPASNum2.csv', 'GeoIPASNum2v6.csv', 'GeoLite2-City-Blocks-IPv4.csv'].indexOf(substep) > -1)
 			{
 				log('Imported files ' + filesProcessed + '/' + filesTotal);
 			}
@@ -465,10 +465,11 @@
 				{
 					if (err)
 					{
-						console.log(err);
+						db.close(function(err2)
+						{
+							done(err);
+						});
 
-						//todo: make a function to close DB on error
-						done(err);
 					}
 					else
 					{
@@ -478,16 +479,37 @@
 
 				});
 
+				//step3('GeoLite2-City-Blocks-IPv4.csv');
 			}
 			else if (substep == 'GeoIPASNum2v6.csv')
 			{
 				var GeoIPASNum2v6_csv = path.join(unzippedFolders, 'ASN-v6', 'GeoIPASNum2v6.csv');
 
+				log('Importing GeoIPASNum2v6.csv');
+
 				importASN(db, log, options.verbose, GeoIPASNum2v6_csv, 6, function(err)
 				{
-					console.log(err);
+					if (err)
+					{
+						db.close(function(err2)
+						{
+							done(err);
+						});
+
+					}
+					else
+					{
+						filesProcessed++;
+						step3('GeoLite2-City-Blocks-IPv4.csv');
+					}
+
 				});
-				
+
+			}
+			else if (substep == 'GeoLite2-City-Blocks-IPv4.csv')
+			{
+				console.log(GeoLite2Path); //path to current month in the folder caluated
+				console.log('GeoLite2-City-Blocks-IPv4.csv later...');
 			}
 			else
 			{
@@ -514,41 +536,10 @@
 
 			}
 
-			// console.log(GeoLite2Path); //path to current month in the folder caluated
-
-		// 	var csvFile = path.join(unzippedFolders, 'ASN-v4', 'GeoIPASNum2.csv');
-		//
-		// 	readCSV(
-		// 		csvFile,
-		// 		function err(err)
-		// 		{
-		// 			console.log(err);
-		// 		},
-		// 		function line(lineNum, data)
-		// 		{
-		// 			console.log(lineNum, data);
-		// 		},
-		// 		function end()
-		// 		{
-		// 			console.log('end');
-		// 		},
-		// 		function count(num)
-		// 		{
-		// 			console.log(num);
-		// 		}
-		// );
-		//
-		//
-		// 	console.log(substep);
-
-//			console.log('step 3 later');
-
 		}
 
 		//Call Step 1
 		step1();
-
-
 
 
 		//todo: this would go ahead and download the data and build the database
