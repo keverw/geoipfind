@@ -1,8 +1,6 @@
 (function ()
 {
 	var inet_pton = require('./lib/inet_pton.js');
-	var createSchema = require('./lib/createSchema.js');
-	var importASN = require('./lib/importASN.js');
 
 	function buildDatabase(databaseLocation, options, cb, logCB)
 	{
@@ -15,7 +13,12 @@
 			humanizeDuration = require('humanize-duration'),
 			del = require('delete'),
 			zip = require('cross-zip'),
-			ip = require('ip');
+			ip = require('ip'),
+			async = require('async');
+
+		var createSchema = require('./lib/createSchema.js'),
+			importASN = require('./lib/importASN.js'),
+			importBlocks = require('./lib/importBlocks.js');
 
 		var sqlite3 = require('sqlite3').verbose();
 		//var sqlite3 = require('sqlite3');
@@ -457,6 +460,8 @@
 
 			if (substep == 'GeoIPASNum2.csv')
 			{
+				return step3('GeoLite2-City-Blocks-IPv6.csv');
+
 				var GeoIPASNum2_csv = path.join(unzippedFolders, 'ASN-v4', 'GeoIPASNum2.csv');
 
 				log('Importing GeoIPASNum2.csv');
@@ -479,7 +484,6 @@
 
 				});
 
-				//step3('GeoLite2-City-Blocks-IPv4.csv');
 			}
 			else if (substep == 'GeoIPASNum2v6.csv')
 			{
@@ -508,8 +512,36 @@
 			}
 			else if (substep == 'GeoLite2-City-Blocks-IPv4.csv')
 			{
-				console.log(GeoLite2Path); //path to current month in the folder caluated
-				console.log('GeoLite2-City-Blocks-IPv4.csv later...');
+				var v4_blocks_csv = path.join(GeoLite2Path, 'GeoLite2-City-Blocks-IPv4.csv');
+
+				importBlocks(db, log, options.verbose, v4_blocks_csv, 4, function(err)
+				{
+					if (err)
+					{
+						db.close(function(err2)
+						{
+							done(err);
+						});
+
+					}
+					else
+					{
+						filesProcessed++;
+						step3('GeoLite2-City-Blocks-IPv6.csv');
+					}
+
+				});
+
+			}
+			else if (substep == 'GeoLite2-City-Blocks-IPv6.csv')
+			{
+				var v6_blocks_csv = path.join(GeoLite2Path, 'GeoLite2-City-Blocks-IPv6.csv');
+
+				importBlocks(db, log, options.verbose, v6_blocks_csv, 6, function(err)
+				{
+					console.log(err);
+				});
+
 			}
 			else
 			{
@@ -519,16 +551,36 @@
 					log('Creating database and tables');
 					db = new sqlite3.Database(dbFile);
 
-					createSchema(db, log, function(err)
+					//PRAGMA synchronous = OFF and PRAGMA journal_mode = MEMORY in attempts to speed up large import
+					//As long as no crashes or powerloss, the database will be fine. Would never do this in production, but it's a read only database and data is a from a repeatable source
+					var dbSettings = ['PRAGMA synchronous = OFF', 'PRAGMA journal_mode = MEMORY', 'pragma temp_store=memory'];
+
+					async.eachOfSeries(dbSettings, function(value, key, callback)
 					{
-						if (err)
+						db.run(value, function(err)
 						{
-							done(err);
-						}
-						else
+							callback(err);
+						});
+
+					}, function done(err)
+					{
+						db.parallelize(function()
 						{
-							step3('GeoIPASNum2.csv');
-						}
+
+							createSchema(db, log, function(err)
+							{
+								if (err)
+								{
+									done(err);
+								}
+								else
+								{
+									step3('GeoIPASNum2.csv');
+								}
+
+							});
+
+						});
 
 					});
 
