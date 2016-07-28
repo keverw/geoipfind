@@ -18,7 +18,8 @@
 
 		var createSchema = require('./lib/createSchema.js'),
 			importASN = require('./lib/importASN.js'),
-			importBlocks = require('./lib/importBlocks.js');
+			importBlocks = require('./lib/importBlocks.js'),
+			geoNames = require('./lib/geoNames.js');
 
 		var sqlite3 = require('sqlite3').verbose();
 		//var sqlite3 = require('sqlite3');
@@ -452,14 +453,17 @@
 
 		function step3(substep)
 		{
-			if (['GeoIPASNum2.csv', 'GeoIPASNum2v6.csv', 'GeoLite2-City-Blocks-IPv4.csv'].indexOf(substep) > -1)
+			if (['GeoIPASNum2.csv', 'GeoIPASNum2v6.csv', 'GeoLite2-City-Blocks-IPv4.csv', 'geo_names'].indexOf(substep) > -1)
 			{
 				log('Imported files ' + filesProcessed + '/' + filesTotal);
 			}
 
 			if (substep == 'GeoIPASNum2.csv')
 			{
-				return step3('GeoLite2-City-Blocks-IPv6.csv');
+				//return step3('GeoLite2-City-Blocks-IPv6.csv');
+				//return step3('GeoLite2-City-Blocks-IPv4.csv');
+
+				return step3('geo_names');
 
 				var GeoIPASNum2_csv = path.join(unzippedFolders, 'ASN-v4', 'GeoIPASNum2.csv');
 
@@ -513,6 +517,8 @@
 			{
 				var v4_blocks_csv = path.join(GeoLite2Path, 'GeoLite2-City-Blocks-IPv4.csv');
 
+				log('Importing GeoLite2-City-Blocks-IPv4.csv');
+
 				importBlocks(db, log, options.verbose, v4_blocks_csv, 4, function(err)
 				{
 					if (err)
@@ -536,9 +542,43 @@
 			{
 				var v6_blocks_csv = path.join(GeoLite2Path, 'GeoLite2-City-Blocks-IPv6.csv');
 
+				log('Importing GeoLite2-City-Blocks-IPv6.csv');
+
 				importBlocks(db, log, options.verbose, v6_blocks_csv, 6, function(err)
 				{
 					console.log(err);
+				});
+
+			}
+			else if (substep == 'geo_names')
+			{
+				db.serialize(function()
+				{
+					log('Importing GEO Names database');
+
+					var langs = ['de', 'en', 'es', 'fr', 'ja', 'pt-BR', 'ru', 'zh-CN'];
+
+					async.eachOfSeries(langs, function(value, key, callback)
+					{
+						var fileLoc = path.join(GeoLite2Path, 'GeoLite2-City-Locations-' + value + '.csv');
+
+						geoNames(db, log, options.verbose, fileLoc, value, function(err)
+						{
+							if (!err)
+							{
+								filesProcessed++;
+								log('Imported files ' + filesProcessed + '/' + filesTotal);
+							}
+
+							callback(err);
+						});
+
+					}, function done(err)
+					{
+						//then if no error, jump to cleanup. Then building database is done!!! :)
+						console.log('done err', err);
+					});
+
 				});
 
 			}
