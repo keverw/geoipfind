@@ -147,11 +147,10 @@
 
 					var fileAge = cTime - stats.mtime.getTime();
 					var oneHour = 60 * 60 * 1000;
-					var eightHours = oneHour*12;
 
-					if (fileAge > eightHours)
+					if (fileAge > oneHour*12)
 					{
-						log(filename + ' older than 8 hours, redownloading');
+						log(filename + ' older than 12 hours, redownloading');
 
 						del([path], function(err) {
 							if (err)
