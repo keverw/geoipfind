@@ -460,11 +460,6 @@
 
 			if (substep == 'GeoIPASNum2.csv')
 			{
-				//return step3('GeoLite2-City-Blocks-IPv6.csv');
-				//return step3('GeoLite2-City-Blocks-IPv4.csv');
-
-				return step3('geo_names');
-
 				var GeoIPASNum2_csv = path.join(unzippedFolders, 'ASN-v4', 'GeoIPASNum2.csv');
 
 				log('Importing GeoIPASNum2.csv');
@@ -546,38 +541,94 @@
 
 				importBlocks(db, log, options.verbose, v6_blocks_csv, 6, function(err)
 				{
-					console.log(err);
+
+					if (err)
+					{
+						db.close(function(err2)
+						{
+							done(err);
+						});
+
+					}
+					else
+					{
+						filesProcessed++;
+						step3('geo_names');
+					}
+
 				});
 
 			}
 			else if (substep == 'geo_names')
 			{
-				db.serialize(function()
+				db.serialize();
+
+				log('Importing GEO Names database');
+
+				var langs = ['de', 'en', 'es', 'fr', 'ja', 'pt-BR', 'ru', 'zh-CN'];
+
+				async.eachOfSeries(langs, function(value, key, callback)
 				{
-					log('Importing GEO Names database');
+					var fileLoc = path.join(GeoLite2Path, 'GeoLite2-City-Locations-' + value + '.csv');
 
-					var langs = ['de', 'en', 'es', 'fr', 'ja', 'pt-BR', 'ru', 'zh-CN'];
-
-					async.eachOfSeries(langs, function(value, key, callback)
+					geoNames(db, log, options.verbose, fileLoc, value, function(err)
 					{
-						var fileLoc = path.join(GeoLite2Path, 'GeoLite2-City-Locations-' + value + '.csv');
-
-						geoNames(db, log, options.verbose, fileLoc, value, function(err)
+						if (!err)
 						{
-							if (!err)
-							{
-								filesProcessed++;
-								log('Imported files ' + filesProcessed + '/' + filesTotal);
-							}
+							filesProcessed++;
+							log('Imported files ' + filesProcessed + '/' + filesTotal);
+						}
 
-							callback(err);
+						callback(err);
+					});
+
+				}, function done(err)
+				{
+					if (err)
+					{
+						db.close(function(err2)
+						{
+							done(err);
 						});
 
-					}, function done(err)
+					}
+					else
 					{
-						//then if no error, jump to cleanup. Then building database is done!!! :)
-						console.log('done err', err);
-					});
+						filesProcessed++;
+						step3('cleanup');
+					}
+
+				});
+
+			}
+			else if (substep == 'cleanup')
+			{
+				log('Cleaning up...');
+
+				db.close(function(err)
+				{
+					var err = null;
+					if (err)
+					{
+						done(err);
+					}
+					else
+					{
+						del([tmpLoc], function(err) {
+							if (err)
+							{
+								done(err);
+							}
+							else
+							{
+								var totalMS = new Date().getTime() - startTime.getTime();
+								console.log('Done Building Database - Took ' + humanizeDuration(totalMS));
+								done(null);
+							}
+
+						});
+
+					}
 
 				});
 
@@ -603,21 +654,30 @@
 
 					}, function done(err)
 					{
-						db.parallelize(function()
+						db.parallelize();
+
+						createSchema(db, log, function(err)
 						{
-
-							createSchema(db, log, function(err)
+							if (err)
 							{
-								if (err)
+								done(err);
+							}
+							else
+							{
+								db.run('INSERT INTO meta (id, val) VALUES (?, ?)', ['buildDate', startTime.toISOString()], function(err)
 								{
-									done(err);
-								}
-								else
-								{
-									step3('GeoIPASNum2.csv');
-								}
+									if (err)
+									{
+										done(err);
+									}
+									else
+									{
+										step3('GeoIPASNum2.csv');
+									}
 
-							});
+								});
+
+							}
 
 						});
 
@@ -631,9 +691,6 @@
 
 		//Call Step 1
 		step1();
-
-
-		//todo: this would go ahead and download the data and build the database
 	}
 
 	function geoIP(databaseLocation)
