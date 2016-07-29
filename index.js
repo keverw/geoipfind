@@ -2,8 +2,10 @@
 {
 	var inet_pton = require('./lib/inet_pton.js');
 
-	function buildDatabase(databaseLocation, options, cb, logCB)
+	function buildDatabase(databaseLocation, options, buildDone, logCB)
 	{
+		process.setMaxListeners(0);
+
 		var path = require('path'),
 			fs = require('fs'),
 			mkdirp = require('mkdirp'),
@@ -54,11 +56,6 @@
 
 		}
 
-		function done(err)
-		{
-			console.log(err);
-		}
-
 		//Steps to build the database
 		var startTime = new Date();
 		log('Starting Database Build');
@@ -79,7 +76,7 @@
 			{
 				if (err)
 				{
-					done(err);
+					buildbuildDone(err);
 				}
 				else
 				{
@@ -96,7 +93,7 @@
 								{
 									if (err)
 									{
-										done(err);
+										buildbuildDone(err);
 									}
 									else
 									{
@@ -108,12 +105,12 @@
 							}
 							else
 							{
-								done(err);
+								buildDone(err);
 							}
 						}
 						else
 						{
-							done(new Error('data.db exists already. If you wish to build it, delete it first'));
+							buildbuildDone(new Error('data.db exists already. If you wish to build it, delete it first'));
 						}
 
 					});
@@ -139,7 +136,7 @@
 					}
 					else
 					{
-						done(err);
+						buildbuildDone(err);
 					}
 				}
 				else
@@ -156,7 +153,7 @@
 						del([path], function(err) {
 							if (err)
 							{
-								done(err);
+								buildbuildDone(err);
 							}
 							else
 							{
@@ -188,13 +185,14 @@
 
 			var download = wget.download(downloadURL, path, {gunzip: true});
 
-			download.on('error', function(err)
+			download.once('error', function(err)
 			{
+				download.removeAllListeners();
 				del.sync([path]);
-				done(err);
+				buildbuildDone(err);
 			});
 
-			download.on('start', function(fileSize)
+			download.once('start', function(fileSize)
 			{
 				downloadStartTime = new Date();
 				fileSize = parseInt(fileSize);
@@ -220,8 +218,9 @@
 
 			});
 
-			download.on('end', function(output)
+			download.once('end', function(output)
 			{
+				download.removeAllListeners();
 				var totalMS = processLastTime.getTime() - downloadStartTime.getTime();
 				log(output + ', Took ' + humanizeDuration(totalMS));
 				step2(filename + '-unzip');
@@ -335,7 +334,7 @@
 					{
 						if (err)
 						{
-							done(err);
+							buildDone(err);
 						}
 						else
 						{
@@ -367,7 +366,7 @@
 					{
 						if (err)
 						{
-							done(err);
+							buildDone(err);
 						}
 						else
 						{
@@ -399,7 +398,7 @@
 					{
 						if (err)
 						{
-							done(err);
+							buildDone(err);
 						}
 						else
 						{
@@ -408,7 +407,7 @@
 							{
 								if (err)
 								{
-									done(err);
+									buildDone(err);
 								}
 								else
 								{
@@ -453,13 +452,15 @@
 
 		function step3(substep)
 		{
-			if (['GeoIPASNum2.csv', 'GeoIPASNum2v6.csv', 'GeoLite2-City-Blocks-IPv4.csv', 'geo_names'].indexOf(substep) > -1)
+			if (['GeoIPASNum2.csv', 'GeoIPASNum2v6.csv', 'GeoLite2-City-Blocks-IPv4.csv', 'GeoLite2-City-Blocks-IPv6.csv', 'geo_names'].indexOf(substep) > -1)
 			{
 				log('Imported files ' + filesProcessed + '/' + filesTotal);
 			}
 
 			if (substep == 'GeoIPASNum2.csv')
 			{
+				return step3('geo_names');
+
 				var GeoIPASNum2_csv = path.join(unzippedFolders, 'ASN-v4', 'GeoIPASNum2.csv');
 
 				log('Importing GeoIPASNum2.csv');
@@ -470,7 +471,7 @@
 					{
 						db.close(function(err2)
 						{
-							done(err);
+							buildDone(err);
 						});
 
 					}
@@ -495,7 +496,7 @@
 					{
 						db.close(function(err2)
 						{
-							done(err);
+							buildDone(err);
 						});
 
 					}
@@ -520,7 +521,7 @@
 					{
 						db.close(function(err2)
 						{
-							done(err);
+							buildDone(err);
 						});
 
 					}
@@ -546,7 +547,7 @@
 					{
 						db.close(function(err2)
 						{
-							done(err);
+							buildDone(err);
 						});
 
 					}
@@ -579,7 +580,7 @@
 							log('Imported files ' + filesProcessed + '/' + filesTotal);
 						}
 
-						callback(err);
+						callback(err)
 					});
 
 				}, function done(err)
@@ -588,14 +589,67 @@
 					{
 						db.close(function(err2)
 						{
-							done(err);
+							buildDone(err);
 						});
 
 					}
 					else
 					{
-						filesProcessed++;
-						step3('cleanup');
+						step3('reload');
+					}
+
+				});
+
+			}
+			else if (substep == 'reload')
+			{
+				log('Reloading database...');
+
+				db.close(function(err)
+				{
+					if (err)
+					{
+						buildDone(err);
+					}
+					else
+					{
+						db = new sqlite3.Database(dbFile);
+						step3('vacuum');
+					}
+
+				});
+
+			}
+			else if (substep == 'vacuum')
+			{
+				var vStart = new Date();
+				log('Vacuuming Database..');
+
+				db.run('VACUUM', function(err)
+				{
+					if (err)
+					{
+						buildDone(err);
+					}
+					else
+					{
+						var totalMS = new Date().getTime() - vStart.getTime();
+						log('Vacuuming Took ' + humanizeDuration(totalMS));
+						log('Closing database...');
+
+						db.close(function(err)
+						{
+							if (err)
+							{
+								buildDone(err);
+							}
+							else
+							{
+								step3('cleanup');
+							}
+
+						});
+
 					}
 
 				});
@@ -603,31 +657,18 @@
 			}
 			else if (substep == 'cleanup')
 			{
-				log('Cleaning up...');
+				log('Cleaning up tmp files...');
 
-				db.close(function(err)
-				{
-					var err = null;
+				del([tmpLoc], function(err) {
 					if (err)
 					{
-						done(err);
+						buildDone(err);
 					}
 					else
 					{
-						del([tmpLoc], function(err) {
-							if (err)
-							{
-								done(err);
-							}
-							else
-							{
-								var totalMS = new Date().getTime() - startTime.getTime();
-								console.log('Done Building Database - Took ' + humanizeDuration(totalMS));
-								done(null);
-							}
-
-						});
-
+						var totalMS = new Date().getTime() - startTime.getTime();
+						log('Done Building Database - Took ' + humanizeDuration(totalMS));
+						buildDone(null);
 					}
 
 				});
@@ -643,7 +684,12 @@
 
 					//PRAGMA synchronous = OFF and PRAGMA journal_mode = MEMORY in attempts to speed up large import
 					//As long as no crashes or powerloss, the database will be fine. Would never do this in production, but it's a read only database and data is a from a repeatable source
-					var dbSettings = ['PRAGMA synchronous = OFF', 'PRAGMA journal_mode = MEMORY', 'pragma temp_store=memory'];
+					var dbSettings = ['PRAGMA synchronous=OFF'];
+
+					if (options.memory)
+					{
+						dbSettings.push('PRAGMA journal_mode=MEMORY', 'pragma temp_store=memory');
+					}
 
 					async.eachOfSeries(dbSettings, function(value, key, callback)
 					{
@@ -652,7 +698,7 @@
 							callback(err);
 						});
 
-					}, function done(err)
+					}, function buildDone(err)
 					{
 						db.parallelize();
 
@@ -660,7 +706,7 @@
 						{
 							if (err)
 							{
-								done(err);
+								buildDone(err);
 							}
 							else
 							{
@@ -668,7 +714,7 @@
 								{
 									if (err)
 									{
-										done(err);
+										buildDone(err);
 									}
 									else
 									{
