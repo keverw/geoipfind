@@ -76,7 +76,7 @@
 			{
 				if (err)
 				{
-					buildbuildDone(err);
+					buildDone(err);
 				}
 				else
 				{
@@ -93,7 +93,7 @@
 								{
 									if (err)
 									{
-										buildbuildDone(err);
+										buildDone(err);
 									}
 									else
 									{
@@ -110,7 +110,7 @@
 						}
 						else
 						{
-							buildbuildDone(new Error('data.db exists already. If you wish to build it, delete it first'));
+							buildDone(new Error('data.db exists already. If you wish to build it, delete it first'));
 						}
 
 					});
@@ -136,7 +136,7 @@
 					}
 					else
 					{
-						buildbuildDone(err);
+						buildDone(err);
 					}
 				}
 				else
@@ -153,7 +153,7 @@
 						del([path], function(err) {
 							if (err)
 							{
-								buildbuildDone(err);
+								buildDone(err);
 							}
 							else
 							{
@@ -189,7 +189,7 @@
 			{
 				download.removeAllListeners();
 				del.sync([path]);
-				buildbuildDone(err);
+				buildDone(err);
 			});
 
 			download.once('start', function(fileSize)
@@ -459,8 +459,6 @@
 
 			if (substep == 'GeoIPASNum2.csv')
 			{
-				return step3('geo_names');
-
 				var GeoIPASNum2_csv = path.join(unzippedFolders, 'ASN-v4', 'GeoIPASNum2.csv');
 
 				log('Importing GeoIPASNum2.csv');
@@ -562,8 +560,6 @@
 			}
 			else if (substep == 'geo_names')
 			{
-				db.serialize();
-
 				log('Importing GEO Names database');
 
 				var langs = ['de', 'en', 'es', 'fr', 'ja', 'pt-BR', 'ru', 'zh-CN'];
@@ -698,9 +694,9 @@
 							callback(err);
 						});
 
-					}, function buildDone(err)
+					}, function done(err)
 					{
-						db.parallelize();
+						db.serialize();
 
 						createSchema(db, log, function(err)
 						{
