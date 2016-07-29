@@ -29,31 +29,32 @@
 		options = options || {};
 		options.verbose = (options.verbose === undefined) ? true : false;
 
-		function log(text)
+		function log(text, cbOnly)
 		{
 			var ts = '[' + new Date().toISOString() + '] ';
 
-			if (options.verbose)
+			if (cbOnly) //log to logCB only
 			{
-				console.log(ts + text);
-			}
+				if (typeof logCB === 'function')
+				{
+					logCB(ts + text);
+				}
 
-			if (typeof logCB === 'function')
+			}
+			else //log anthing
 			{
-				logCB(ts + text);
+				if (options.verbose)
+				{
+					console.log(ts + text);
+				}
+
+				if (typeof logCB === 'function')
+				{
+					logCB(ts + text);
+				}
+
 			}
-
-		}
-
-		function cbOnly(text)
-		{
-			var ts = '[' + new Date().toISOString() + '] ';
-
-			if (typeof logCB === 'function')
-			{
-				logCB(ts + text);
-			}
-
+			
 		}
 
 		//Steps to build the database
@@ -236,12 +237,13 @@
 				if (progressBarLast != precent)
 				{
 					progressBarLast = precent;
-					cbOnly('Downloaded ' + precent + '%');
-				}
+					log('Downloaded ' + precent + '%', true);
 
-				if (downloadPBar)
-				{
-					downloadPBar.set(precent);
+					if (downloadPBar)
+					{
+						downloadPBar.set(precent);
+					}
+
 				}
 
 			});
