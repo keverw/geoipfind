@@ -1,13 +1,16 @@
 (function ()
 {
-	var inet_pton = require('./lib/inet_pton.js');
+	var path = require('path'),
+		inet_pton = require('./lib/inet_pton.js');
+
+	//var sqlite3 = require('sqlite3').verbose();
+	var sqlite3 = require('sqlite3');
 
 	function buildDatabase(databaseLocation, options, buildDone, logCB)
 	{
 		process.setMaxListeners(0);
 
-		var path = require('path'),
-			fs = require('fs'),
+		var fs = require('fs'),
 			mkdirp = require('mkdirp'),
 			progress = require('progrescii'),
 			wget = require('wget-improved'),
@@ -23,24 +26,18 @@
 			importBlocks = require('./lib/importBlocks.js'),
 			geoNames = require('./lib/geoNames.js');
 
-		//var sqlite3 = require('sqlite3').verbose();
-		var sqlite3 = require('sqlite3');
-
 		options = options || {};
 		options.verbose = (options.verbose === undefined) ? true : false;
+		options.memory = (options.verbose === undefined) ? true : false;
 
 		function log(text, cbOnly)
 		{
 			var ts = '[' + new Date().toISOString() + '] ';
 
-			if (cbOnly) //log to logCB only
-			{
-				if (typeof logCB === 'function')
+			if (cbOnly && typeof logCB === 'function') //log to logCB only
 				{
 					logCB(ts + text);
 				}
-
-			}
 			else //log anthing
 			{
 				if (options.verbose)
@@ -698,7 +695,6 @@
 
 					}, function done(err)
 					{
-						//db.serialize(); //commented out to use parallelize by default
 
 						createSchema(db, log, function(err)
 						{
@@ -737,8 +733,14 @@
 		step1();
 	}
 
-	function geoIP(databaseLocation)
+	function geoIP(databaseLocation, openCB)
 	{
+		databaseLocation = path.resolve(databaseLocation);
+
+		var dbFile = path.join(databaseLocation, 'data.db');
+		
+		var db = (typeof openCB == 'function') ? new sqlite3.Database(dbFile, sqlite3.OPEN_READONLY, openCB) : new sqlite3.Database(dbFile, sqlite3.OPEN_READONLY);
+
 		//todo: this would return a object with .close(to close the database) and .find
 	}
 

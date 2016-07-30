@@ -1,7 +1,7 @@
 {
   "author": "Kevin Whitman (https://github.com/keverw)",
   "name": "geoipfind",
-  "description": "",
+  "description": "Simple IP based geolocation lookup for ISP, country, city, timezone, etc.",
   "version": "0.0.1",
   "keywords": [],
   "dependencies": {
