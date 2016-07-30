@@ -54,7 +54,7 @@
 				}
 
 			}
-			
+
 		}
 
 		//Steps to build the database
@@ -698,7 +698,7 @@
 
 					}, function done(err)
 					{
-						db.serialize();
+						//db.serialize(); //commented out to use parallelize by default
 
 						createSchema(db, log, function(err)
 						{
