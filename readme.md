@@ -10,10 +10,14 @@ I found tons of modules for GEO Location but searching "geolocation ISP" and "ge
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
+
 - [Install](#install)
 - [buildDatabase](#builddatabase)
   - [options](#options)
+    - [Database Build Times](#database-build-times)
 - [geoIP](#geoip)
+  - [findISP](#findisp)
+  - [Close](#close)
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -66,13 +70,45 @@ After you have built the database, you must open the database to query it to use
 Pass in the same folder you passed into `buildDatabase`
 
 ```js
-	var geoIP = geoipfind.geoIP('./db');
+var geoIP = geoipfind.geoIP('./db');
 ```
 
 if SQLite has trouble opening the database it will throw an error. If you prefer to have a callback on trouble opening, you can pass an optional callback as the last parameter.
 
 ```js
 var geoIP = geoipfind.geoIP('./db', function(err)
+{
+	console.log(err);
+});
+```
+
+### findISP
+```js
+geoIP.findISP('IP Address Here', function(err, result)
+{
+	console.log(err, result);
+});
+```
+
+Result is null when not found, else it returns a object
+
+```
+{ ver: 4,
+  asn: 'AS10796',
+  name: 'Time Warner Cable Internet LLC' }
+```
+
+### Close
+Closes the database. Callback is optional
+
+```js
+geoIP.close();
+```
+
+or
+
+```js
+geoIP.close(function(err)
 {
 	console.log(err);
 });
@@ -87,11 +123,17 @@ The attribution requirement may be met by including the following in all adverti
 
 ```
 This product includes GeoLite and GeoLite2 data created by MaxMind, available from
-<a href="http://www.maxmind.com">http://www.maxmind.com</a>.
+<a href="http://www.maxmind.com">http://www.maxmind.com</a>. This work is licensed
+under the Creative Commons Attribution-ShareAlike 4.0 International License.
 
-This database incorporates GeoNames [http://www.geonames.org] geographical data, which is made available under the Creative Commons Attribution 3.0 License. To view a copy of this license, visit http://www.creativecommons.org/licenses/by/3.0/us/.
+To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/.
+
+This database incorporates GeoNames [http://www.geonames.org] geographical data,
+which is made available under the Creative Commons Attribution 3.0 License.
+
+To view a copy of this license, visit http://www.creativecommons.org/licenses/by/3.0/us/.
 ```
 
-This is their standard disclaimer advice, other than I added the "and" part since this is using both databases. One mainly for city lookup, and the other for ISP since GeoLite2 doesn't include ASN data.
+This is their standard disclaimer advice, other than I added the "and" part since this is using both databases. One mainly for city lookup, and the other for ISP since GeoLite2 doesn't include ASN data. Also added the GeoNames disclaimer too.
 
 MaxMind also offers [commercial redistribution licensing](https://www.maxmind.com/en/geolite2-developer-package).

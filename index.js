@@ -1,6 +1,7 @@
 (function ()
 {
 	var path = require('path'),
+		ip = require('ip'),
 		inet_pton = require('./lib/inet_pton.js');
 
 	//var sqlite3 = require('sqlite3').verbose();
@@ -18,7 +19,6 @@
 			humanizeDuration = require('humanize-duration'),
 			del = require('delete'),
 			zip = require('cross-zip'),
-			ip = require('ip'),
 			async = require('async');
 
 		var createSchema = require('./lib/createSchema.js'),
@@ -35,9 +35,9 @@
 			var ts = '[' + new Date().toISOString() + '] ';
 
 			if (cbOnly && typeof logCB === 'function') //log to logCB only
-				{
-					logCB(ts + text);
-				}
+			{
+				logCB(ts + text);
+			}
 			else //log anthing
 			{
 				if (options.verbose)
@@ -738,10 +738,85 @@
 		databaseLocation = path.resolve(databaseLocation);
 
 		var dbFile = path.join(databaseLocation, 'data.db');
-		
-		var db = (typeof openCB == 'function') ? new sqlite3.Database(dbFile, sqlite3.OPEN_READONLY, openCB) : new sqlite3.Database(dbFile, sqlite3.OPEN_READONLY);
 
-		//todo: this would return a object with .close(to close the database) and .find
+		function geoIPClass(db)
+		{
+			this.db = db;
+		}
+
+		geoIPClass.prototype._ipVer = function(ipAddr)
+		{
+			if (ip.isV4Format(ipAddr)) {
+				return 4;
+			} else if (ip.isV6Format(ipAddr)) {
+				return 6;
+			} else {
+				return null;
+			}
+
+		}
+
+		geoIPClass.prototype._findISP = function(ipAddr, version, pton, cb)
+		{
+
+			this.db.get("SELECT * FROM asn WHERE version = ? AND (? BETWEEN start AND end) ORDER BY start DESC, end ASC LIMIT 1", [version, pton], function(err, row)
+			{
+				if (!err && row)
+				{
+					var result = {
+						ver: version,
+						asn: row.as_num,
+						name: row.name
+					};
+
+					cb(err, result);
+				}
+				else
+				{
+					cb(err, row);
+				}
+
+			});
+
+		}
+
+		/////////////////////////////////////////////////////////////////
+		geoIPClass.prototype.findGeoname = function(id, cb)
+		{
+			//todo ...
+		}
+
+		geoIPClass.prototype.findLoc = function(ipAddr, cb)
+		{
+			//todo ...
+		}
+
+		geoIPClass.prototype.findISP = function(ipAddr, cb)
+		{
+			var ver = this._ipVer(ipAddr);
+			
+			if (ver)
+			{
+				this._findISP(ipAddr, ver, inet_pton(ipAddr), cb);
+			}
+			else //Bad IP format
+			{
+				cb(new Error('Bad IP format'), null);
+			}
+
+		}
+
+		geoIPClass.prototype.find = function(ipAddr, cb) //find both
+		{
+			//todo ...
+		}
+
+		geoIPClass.prototype.close = function(cb)
+		{
+			(typeof cb == 'function') ? this.db.close(cb) : this.db.close();
+		}
+
+		return new geoIPClass((typeof openCB == 'function') ? new sqlite3.Database(dbFile, sqlite3.OPEN_READONLY, openCB) : new sqlite3.Database(dbFile, sqlite3.OPEN_READONLY));
 	}
 
 	// Export public API
