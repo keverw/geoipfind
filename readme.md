@@ -84,19 +84,22 @@ var geoIP = geoipfind.geoIP('./db', function(err)
 
 ### findISP
 ```js
-geoIP.findISP('IP Address Here', function(err, result)
+geoIP.findISP('IP Address Here', function(err, found, result)
 {
-	console.log(err, result);
+	console.log(err, found, result);
 });
 ```
 
-Result is null when not found, else it returns a object
+If err, both found and result will be null or undefined.
+if found the object looks like:
 
 ```
 { ver: 4,
   asn: 'AS10796',
   name: 'Time Warner Cable Internet LLC' }
 ```
+
+If not found it will return a object with ver only.
 
 ### Close
 Closes the database. Callback is optional

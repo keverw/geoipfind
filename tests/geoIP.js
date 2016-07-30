@@ -7,9 +7,9 @@ var geoIP = geoipfind.geoIP('./db');
 // 	console.log(err);
 // });
 
-geoIP.findISP('', function(err, result)
+geoIP.findISP('127.0.0.1', function(err, found, result)
 {
-	console.log(err, result);
+	console.log(err, found, result);
 });
 
 //geoIP.close();

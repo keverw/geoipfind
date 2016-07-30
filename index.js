@@ -761,19 +761,21 @@
 
 			this.db.get("SELECT * FROM asn WHERE version = ? AND (? BETWEEN start AND end) ORDER BY start DESC, end ASC LIMIT 1", [version, pton], function(err, row)
 			{
-				if (!err && row)
-				{
-					var result = {
-						ver: version,
-						asn: row.as_num,
-						name: row.name
-					};
+				var result = {ver: version};
 
-					cb(err, result);
+				if (err)
+				{
+					cb(err);
+				}
+				else if (row)
+				{
+					result.asn = row.as_num;
+					result.name = row.name;
+					cb(err, true, result);
 				}
 				else
 				{
-					cb(err, row);
+					cb(err, false, result);
 				}
 
 			});
@@ -793,15 +795,23 @@
 
 		geoIPClass.prototype.findISP = function(ipAddr, cb)
 		{
-			var ver = this._ipVer(ipAddr);
-			
-			if (ver)
+			if (typeof ipAddr == 'string' && ipAddr.length > 0)
 			{
-				this._findISP(ipAddr, ver, inet_pton(ipAddr), cb);
+				var ver = this._ipVer(ipAddr);
+
+				if (ver > 0)
+				{
+					this._findISP(ipAddr, ver, inet_pton(ipAddr), cb);
+				}
+				else //Bad IP format
+				{
+					cb(new Error('Bad IP format'));
+				}
+
 			}
-			else //Bad IP format
+			else
 			{
-				cb(new Error('Bad IP format'), null);
+				cb(new Error('Non string IP Address or Empty'));
 			}
 
 		}
