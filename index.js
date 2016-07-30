@@ -23,8 +23,8 @@
 			importBlocks = require('./lib/importBlocks.js'),
 			geoNames = require('./lib/geoNames.js');
 
-		var sqlite3 = require('sqlite3').verbose();
-		//var sqlite3 = require('sqlite3');
+		//var sqlite3 = require('sqlite3').verbose();
+		var sqlite3 = require('sqlite3');
 
 		options = options || {};
 		options.verbose = (options.verbose === undefined) ? true : false;
