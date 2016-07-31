@@ -1,5 +1,17 @@
 (function ()
 {
+	//Continent Code to geonameId map - missing data as only Asia, Europe are imported as Continent data in geo_names table
+	var continentCodeMap = {
+		AF: 6255146,
+		AS: 6255147,
+		EU: 6255148,
+		NA: 6255149,
+		OC: 6255151,
+		SA: 6255150,
+		AN: 6255152
+	};
+
+	////////////////////////////////////////////////////////////
 	var path = require('path'),
 		ip = require('ip'),
 		inet_pton = require('./lib/inet_pton.js');
@@ -787,6 +799,13 @@
 
 			});
 
+		}
+
+		geoIPClass.prototype._setLangCode = function(obj, field, code)
+		{
+			var langLookupIndent = field + '.' + code;
+			obj[langLookupIndent] = [field, code];
+			return langLookupIndent;
 		}
 		geoIPClass.prototype._findISP = function(ipAddr, version, pton, cb)
 		{
