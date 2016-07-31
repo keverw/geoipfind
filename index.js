@@ -1,6 +1,7 @@
 (function ()
 {
 	//Continent Code to geonameId map - missing data as only Asia, Europe are imported as Continent data in geo_names table
+	//Found on: http://download.geonames.org/export/dump/
 	var continentCodeMap = {
 		AF: 6255146,
 		AS: 6255147,
@@ -798,6 +799,38 @@
 				}
 
 			});
+
+		}
+
+		geoIPClass.prototype._lookupByCode = function(type, code, cb)
+		{
+			//supports country, subdivision 1 and subdivision 2 lookup
+
+			//types used by importer reference:
+			// 0 = unknown
+			// 1 = Continent
+			// 2 = country
+			// 3 = subdivision 1
+			// 4 = subdivision 2
+			// 5 = city
+
+			////
+			if (type == 2) //country
+			{
+				this.db.get("SELECT * from geo_names WHERE country_iso_code = ? AND type=2", [code], cb);
+			}
+			else if (type == 3) //subdivision 1
+			{
+				this.db.get("SELECT * from geo_names WHERE subdivision_1_iso_code = ? AND type=3", [code], cb);
+			}
+			else if (type == 4) //subdivision 2
+			{
+				this.db.get("SELECT * from geo_names WHERE subdivision_2_iso_code = ? AND type=4", [code], cb);
+			}
+			else
+			{
+				cb(new Error('type not supported by this function'));
+			}
 
 		}
 
