@@ -45,8 +45,8 @@
 			geoNames = require('./lib/geoNames.js');
 
 		options = options || {};
-		options.verbose = (options.verbose === undefined) ? true : false;
-		options.memory = (options.memory === undefined) ? true : false;
+		options.verbose = (options.verbose === undefined) ? true : options.verbose;
+		options.memory = (options.memory === undefined) ? true : options.memory;
 
 		function log(text, cbOnly)
 		{
