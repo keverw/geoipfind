@@ -579,7 +579,11 @@
 			{
 				log('Importing GEO Names database');
 
-				var langs = ['de', 'en', 'es', 'fr', 'ja', 'pt-BR', 'ru', 'zh-CN'];
+				//English always has to be imported first.
+				//If Dutch, etc is imported first, 3345438 is classified as geo_type 3 because the city name is missing.
+				//If English is imported first, 3345438 is classified as geo_type 5 because the city name isn't missing.
+
+				var langs = ['en', 'de', 'es', 'fr', 'ja', 'pt-BR', 'ru', 'zh-CN'];
 
 				async.eachOfSeries(langs, function(value, key, callback)
 				{
