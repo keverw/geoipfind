@@ -7,6 +7,11 @@
 	//var sqlite3 = require('sqlite3').verbose();
 	var sqlite3 = require('sqlite3');
 
+	function inParam(sql, arr) //thanks https://github.com/mapbox/node-sqlite3/issues/527
+	{
+  	return sql.replace('?#', arr.map(()=> '?').join(','));
+	}
+
 	function buildDatabase(databaseLocation, options, buildDone, logCB)
 	{
 		process.setMaxListeners(0);
@@ -756,6 +761,33 @@
 
 		}
 
+		geoIPClass.prototype._findGeonames = function(ids, cb)
+		{
+			var geonameData = {};
+
+			this.db.all(inParam('SELECT * from geo_names WHERE geoname_id in (?#)', ids), ids, function(err, geoname_rows)
+			{
+				if (err)
+				{
+					cb(err);
+				}
+				else if (geoname_rows.length > 0)
+				{
+					for (key in geoname_rows)
+					{
+						geonameData[geoname_rows[key].geoname_id] = geoname_rows[key];
+					}
+
+					cb(null, geonameData)
+				}
+				else
+				{
+					cb(err, geonameData);
+				}
+
+			});
+
+		}
 		geoIPClass.prototype._findISP = function(ipAddr, version, pton, cb)
 		{
 
