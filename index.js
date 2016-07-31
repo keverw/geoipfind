@@ -14,6 +14,7 @@
 
 	////////////////////////////////////////////////////////////
 	var path = require('path'),
+		async = require('async'),
 		ip = require('ip'),
 		inet_pton = require('./lib/inet_pton.js');
 
@@ -36,8 +37,7 @@
 			filesize = require('file-size'),
 			humanizeDuration = require('humanize-duration'),
 			del = require('delete'),
-			zip = require('cross-zip'),
-			async = require('async');
+			zip = require('cross-zip');
 
 		var createSchema = require('./lib/createSchema.js'),
 			importASN = require('./lib/importASN.js'),
@@ -46,7 +46,7 @@
 
 		options = options || {};
 		options.verbose = (options.verbose === undefined) ? true : false;
-		options.memory = (options.verbose === undefined) ? true : false;
+		options.memory = (options.memory === undefined) ? true : false;
 
 		function log(text, cbOnly)
 		{
@@ -802,44 +802,23 @@
 
 		}
 
-		geoIPClass.prototype._lookupByCode = function(type, code, cb)
-		{
-			//supports country, subdivision 1 and subdivision 2 lookup
-
-			//types used by importer reference:
-			// 0 = unknown
-			// 1 = Continent
-			// 2 = country
-			// 3 = subdivision 1
-			// 4 = subdivision 2
-			// 5 = city
-
-			////
-			if (type == 2) //country
-			{
-				this.db.get("SELECT * from geo_names WHERE country_iso_code = ? AND type=2", [code], cb);
-			}
-			else if (type == 3) //subdivision 1
-			{
-				this.db.get("SELECT * from geo_names WHERE subdivision_1_iso_code = ? AND type=3", [code], cb);
-			}
-			else if (type == 4) //subdivision 2
-			{
-				this.db.get("SELECT * from geo_names WHERE subdivision_2_iso_code = ? AND type=4", [code], cb);
-			}
-			else
-			{
-				cb(new Error('type not supported by this function'));
-			}
-
-		}
-
 		geoIPClass.prototype._setLangCode = function(obj, field, code)
 		{
 			var langLookupIndent = field + '.' + code;
 			obj[langLookupIndent] = [field, code];
 			return langLookupIndent;
 		}
+
+		geoIPClass.prototype._findLoc = function(ipAddr, version, pton, cb)
+		{
+			var self = this;
+
+			var resultOutput = {ver: version};
+			var langLookups = {};
+
+			
+		}
+
 		geoIPClass.prototype._findISP = function(ipAddr, version, pton, cb)
 		{
 
@@ -869,12 +848,31 @@
 		/////////////////////////////////////////////////////////////////
 		geoIPClass.prototype.findGeoname = function(id, cb)
 		{
+			//todo: probably support list too.
 			//todo ...
 		}
 
 		geoIPClass.prototype.findLoc = function(ipAddr, cb)
 		{
-			//todo ...
+			if (typeof ipAddr == 'string' && ipAddr.length > 0)
+			{
+				var ver = this._ipVer(ipAddr);
+
+				if (ver > 0)
+				{
+					this._findLoc(ipAddr, ver, inet_pton(ipAddr), cb);
+				}
+				else //Bad IP format
+				{
+					cb(new Error('Bad IP format'));
+				}
+
+			}
+			else
+			{
+				cb(new Error('Non string IP Address or Empty'));
+			}
+
 		}
 
 		geoIPClass.prototype.findISP = function(ipAddr, cb)
