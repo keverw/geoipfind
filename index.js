@@ -820,7 +820,77 @@
 			var resultOutput = {ver: version};
 			var langLookups = {};
 
-			
+			self.db.get("SELECT * FROM geo_blocks WHERE version = ? AND (? BETWEEN start AND end) ORDER BY start DESC, end ASC LIMIT 1", [version, pton], function(err, row)
+			{
+				if (err)
+				{
+					cb(err);
+				}
+				else if (row)
+				{
+					resultOutput.is_anonymous_proxy = row.is_anonymous_proxy;
+					resultOutput.is_satellite_provider = row.is_satellite_provider;
+
+					//grab geoname data
+					var geonames = [];
+
+					if (row.geoname_id) {
+						geonames.push(row.geoname_id);
+					}
+
+					if (row.registered_country_geoname_id) {
+						geonames.push(row.registered_country_geoname_id);
+					}
+
+					if (row.represented_country_geoname_id) {
+						geonames.push(row.represented_country_geoname_id);
+					}
+
+					self._findGeonames(geonames, function(err, geonamesResult)
+					{
+						if (err)
+						{
+							cb(err);
+						}
+						else
+						{
+							var geoname_idResult = geonamesResult[row.geoname_id];
+							//console.log(geonamesResult);
+
+							if (geoname_idResult)
+							{
+								//continent
+								resultOutput.continent = {
+									geoname_id: continentCodeMap[geoname_idResult.continent_code],
+									code: geoname_idResult.continent_code,
+									_langLookup: self._setLangCode(langLookups, 'continent_name', geoname_idResult.continent_code)
+								};
+
+								console.log(resultOutput);
+
+							}
+							else
+							{
+								cb(new Error('Geonames Not Found'));
+							}
+
+						}
+
+					});
+
+
+					//console.log(row);
+
+
+
+				}
+				else
+				{
+					cb(err, false, resultOutput);
+				}
+
+			});
+
 		}
 
 		geoIPClass.prototype._findISP = function(ipAddr, version, pton, cb)
