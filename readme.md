@@ -78,7 +78,7 @@ if SQLite has trouble opening the database it will throw an error. If you prefer
 ```js
 var geoIP = geoipfind.geoIP('./db', function(err)
 {
-	console.log(err);
+    console.log(err);
 });
 ```
 
@@ -86,7 +86,7 @@ var geoIP = geoipfind.geoIP('./db', function(err)
 ```js
 geoIP.findISP('IP Address Here', function(err, found, result)
 {
-	console.log(err, found, result);
+    console.log(err, found, result);
 });
 ```
 
@@ -113,7 +113,7 @@ or
 ```js
 geoIP.close(function(err)
 {
-	console.log(err);
+    console.log(err);
 });
 ```
 
