@@ -944,9 +944,78 @@
                                 }
 
                                 //Resolve Langauge Strings
-                                console.log(resultOutput);
-                                console.log(langLookups);
+                                var langLookupsINList = [];
+                                
+                                for (var key in langLookups)
+                                {
+                                    langLookupsINList.push(langLookups[key][1]);
+                                }
 
+                                langLookupsINList_results = {};
+                                self.db.all(inParam('SELECT * FROM lang WHERE lookup_code in (?#)', langLookupsINList), langLookupsINList, function(err, langLookups_rows)
+                                {
+                                    if (err) return cb(err);
+
+                                    for (var key in langLookups_rows)
+                                    {
+                                        var data = langLookups_rows[key];
+                                        var lookup_code = data.field + '.' + data.lookup_code;
+
+                                        delete data.field;
+                                        delete data.code;
+                                        delete data.lookup_code;
+
+                                        langLookupsINList_results[lookup_code] = data;
+                                    }
+
+                                    ////////////////////////////////////////////////////////////////
+                                    //loop resultOutputs to set language
+                                    for (var key2 in resultOutput)
+                                    {
+                                        if (resultOutput[key2] && typeof resultOutput[key2] == 'object' && typeof resultOutput[key2]._langLookup == 'string')
+                                        {
+                                            var langData = langLookupsINList_results[resultOutput[key2]._langLookup];
+
+                                            if (langData)
+                                            {
+                                                delete resultOutput[key2]._langLookup;
+
+                                                resultOutput[key2].name = langData.en;
+                                                resultOutput[key2].names = langData;
+                                            }
+                                            else
+                                            {
+                                                return cb('Missing lang data');
+                                            }
+
+                                        }
+
+                                    }
+
+                                    if (resultOutput.subdivisions)
+                                    {
+                                        for (var key3 in resultOutput.subdivisions)
+                                        {
+                                            var langData = langLookupsINList_results[resultOutput.subdivisions[key3]._langLookup];
+
+                                            if (langData)
+                                            {
+                                                delete resultOutput.subdivisions[key3]._langLookup;
+
+                                                resultOutput.subdivisions[key3].name = langData.en;
+                                                resultOutput.subdivisions[key3].names = langData;
+                                            }
+                                            else
+                                            {
+                                                return cb('Missing lang data');
+                                            }
+
+                                        }
+
+                                    }
+
+                                    cb(null, true, resultOutput);
+                                });
 
                             });
 
