@@ -806,6 +806,43 @@
 
 		}
 
+		geoIPClass.prototype._findByGeoLookupCode = function(ids, cb)
+		{
+			geo_lookupData = {};
+
+			if (ids.length > 0)
+			{
+				this.db.all(inParam('SELECT * from geo_names WHERE geo_lookup in (?#)', ids), ids, function(err, geo_lookup_rows)
+				{
+					if (err)
+					{
+						cb(err);
+					}
+					else if (geo_lookup_rows.length > 0)
+					{
+
+						for (key in geo_lookup_rows)
+						{
+							geo_lookupData[geo_lookup_rows[key].geo_lookup] = geo_lookup_rows[key];
+						}
+						
+						cb(null, geo_lookupData);
+					}
+					else
+					{
+						cb(null, geo_lookupData);
+					}
+
+				});
+
+			}
+			else
+			{
+				cb(null, geo_lookupData);
+			}
+
+		}
+
 		geoIPClass.prototype._setLangCode = function(obj, field, code)
 		{
 			var langLookupIndent = field + '.' + code;
