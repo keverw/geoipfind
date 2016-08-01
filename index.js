@@ -825,7 +825,7 @@
 						{
 							geo_lookupData[geo_lookup_rows[key].geo_lookup] = geo_lookup_rows[key];
 						}
-						
+
 						cb(null, geo_lookupData);
 					}
 					else
@@ -892,7 +892,6 @@
 						else
 						{
 							var geoname_idResult = geonamesResult[row.geoname_id];
-							//console.log(geonamesResult);
 
 							if (geoname_idResult)
 							{
@@ -903,7 +902,157 @@
 									_langLookup: self._setLangCode(langLookups, 'continent_name', geoname_idResult.continent_code)
 								};
 
-								console.log(resultOutput);
+								//geo_lookup codes to lookup - country and subdivision_1_iso_code and subdivision_2_iso_code
+								var geo_lookup = [];
+
+								//country
+								var countryLookupCode = '';
+								if (geoname_idResult.country_iso_code && geoname_idResult.country_iso_code.length > 0) {
+									countryLookupCode = [2, geoname_idResult.continent_code, geoname_idResult.country_iso_code].join('.');
+									geo_lookup.push(countryLookupCode);
+								}
+
+								//subdivision_1_iso_code
+								var subdivision1LookupCode = '';
+								if (geoname_idResult.subdivision_1_iso_code && geoname_idResult.subdivision_1_iso_code.length > 0) {
+									subdivision1LookupCode = [3, geoname_idResult.continent_code, geoname_idResult.country_iso_code, geoname_idResult.subdivision_1_iso_code].join('.');
+									geo_lookup.push(subdivision1LookupCode);
+								}
+
+								//subdivision_2_iso_code
+								var subdivision2LookupCode = '';
+								if (geoname_idResult.subdivision_2_iso_code && geoname_idResult.subdivision_2_iso_code.length > 0) {
+									subdivision2LookupCode = [4, geoname_idResult.continent_code, geoname_idResult.country_iso_code, geoname_idResult.subdivision_1_iso_code, geoname_idResult.subdivision_2_iso_code].join('.');
+									geo_lookup.push(subdivision2LookupCode);
+								}
+
+								//Do database query
+								self._findByGeoLookupCode(geo_lookup, function(err, geo_lookupResults)
+								{
+									if (err)
+									{
+										cb(err);
+									}
+									else
+									{
+										//country data
+										var countryMeta = geo_lookupResults[countryLookupCode];
+
+										if (countryMeta)
+										{
+											resultOutput.country = {
+												geoname_id: countryMeta.geoname_id,
+												iso_code: countryMeta.country_iso_code,
+												_langLookup: self._setLangCode(langLookups, 'country_name', [countryMeta.continent_code, countryMeta.country_iso_code].join('.'))
+											};
+
+										}
+
+										//city data
+										if (geoname_idResult.type == 5)
+										{
+											resultOutput.city = {
+												geoname_id: geoname_idResult.geoname_id,
+												_langLookup: self._setLangCode(langLookups, 'city_name', geoname_idResult.geoname_id)
+											};
+
+										}
+
+										//location data
+										resultOutput.location = {
+											latitude: row.latitude,
+											longitude: row.latitude,
+											metro_code: geoname_idResult.metro_code,
+											time_zone: geoname_idResult.time_zone
+										};
+
+										//postal code
+										resultOutput.postal = {
+											code: row.postal_code
+										};
+
+										//registered_country_geoname_id
+										if (row.registered_country_geoname_id)
+										{
+											var countryData = geonamesResult[row.registered_country_geoname_id];
+
+											if (countryData)
+											{
+												resultOutput.registered_country = {
+													geoname_id: countryData.geoname_id,
+													iso_code: countryData.country_iso_code,
+													_langLookup: self._setLangCode(langLookups, 'country_name', [countryData.continent_code, countryData.country_iso_code].join('.'))
+												};
+
+											}
+
+										}
+
+										//represented_country_geoname_id
+										if (row.represented_country_geoname_id)
+										{
+											var countryData = geonamesResult[row.represented_country_geoname_id];
+
+											if (countryData)
+											{
+												resultOutput.represented_country = {
+													geoname_id: countryData.geoname_id,
+													iso_code: countryData.country_iso_code,
+													_langLookup: self._setLangCode(langLookups, 'country_name', [countryData.continent_code, countryData.country_iso_code].join('.'))
+												};
+											}
+
+										}
+
+										//subdivisions
+										//subdivision - 1
+										if (subdivision1LookupCode.length > 0)
+										{
+											var subdivisionData = geo_lookupResults[subdivision1LookupCode];
+
+											//process if a non null result
+											if (subdivisionData)
+											{
+												if (resultOutput.subdivisions === undefined) {resultOutput.subdivisions = [];}
+
+												////push onto subdivisions
+												resultOutput.subdivisions.push({
+													geoname_id: subdivisionData.geoname_id,
+													iso_code: subdivisionData.subdivision_1_iso_code,
+													_langLookup: self._setLangCode(langLookups, 'subdivision_1_name', [subdivisionData.continent_code, subdivisionData.country_iso_code, subdivisionData.subdivision_1_iso_code].join('.'))
+												});
+
+											}
+
+										}
+
+										//subdivision - 2
+										if (subdivision2LookupCode.length > 0)
+										{
+											var subdivisionData = geo_lookupResults[subdivision2LookupCode];
+
+											//process if a non null result
+											if (subdivisionData)
+											{
+												if (resultOutput.subdivisions === undefined) {resultOutput.subdivisions = [];}
+
+												////push onto subdivisions
+												resultOutput.subdivisions.push({
+													geoname_id: subdivisionData.geoname_id,
+													iso_code: subdivisionData.subdivision_2_iso_code,
+													_langLookup: self._setLangCode(langLookups, 'subdivision_2_name', [subdivisionData.continent_code, subdivisionData.country_iso_code, subdivisionData.subdivision_1_iso_code, subdivisionData.subdivision_2_iso_code].join('.'))
+												});
+
+											}
+
+										}
+
+										//Resolve Langauge Strings
+										console.log(resultOutput);
+										console.log(langLookups);
+									}
+
+								});
 
 							}
 							else
@@ -914,11 +1063,6 @@
 						}
 
 					});
-
-
-					//console.log(row);
-
-
 
 				}
 				else
