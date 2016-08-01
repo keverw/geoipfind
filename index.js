@@ -90,48 +90,35 @@
 
             mkdirp(databaseLocation, function (err)
             {
-                if (err)
+                if (err) return buildDone(err);
+
+                //check for database
+                log('Checking for ' + dbFile);
+                fs.stat(dbFile, function(err, stats)
                 {
-                    buildDone(err);
-                }
-                else
-                {
-                    //check for database
-                    log('Checking for ' + dbFile);
-                    fs.stat(dbFile, function(err, stats)
+                    if (err)
                     {
-                        if (err)
+                        if (err.code == 'ENOENT') //download
                         {
-                            if (err.code == 'ENOENT') //download
+                            log('mkdirp on ' + tmpLoc);
+                            mkdirp(tmpLoc, function (err)
                             {
-                                log('mkdirp on ' + tmpLoc);
-                                mkdirp(tmpLoc, function (err)
-                                {
-                                    if (err)
-                                    {
-                                        buildDone(err);
-                                    }
-                                    else
-                                    {
-                                        step2();
-                                    }
+                                if (err) return buildDone(err);
+                                step2();
+                            });
 
-                                });
-
-                            }
-                            else
-                            {
-                                buildDone(err);
-                            }
                         }
                         else
                         {
-                            buildDone(new Error('data.db exists already. If you wish to build it, delete it first'));
+                            buildDone(err);
                         }
+                    }
+                    else
+                    {
+                        buildDone(new Error('data.db exists already. If you wish to build it, delete it first'));
+                    }
 
-                    });
-
-                }
+                });
 
             });
 
@@ -166,16 +153,10 @@
                     {
                         log(filename + ' older than 12 hours, redownloading');
 
-                        del([path], function(err) {
-                            if (err)
-                            {
-                                buildDone(err);
-                            }
-                            else
-                            {
-                                step2(filename + '-download');
-                            }
-
+                        del([path], function(err)
+                        {
+                            if (err) return buildDone(err);
+                            step2(filename + '-download');
                         });
 
                     }
@@ -275,33 +256,27 @@
                     {
                         mkdirp(outputPath, function (err)
                         {
-                            if (err)
-                            {
-                                cb(err);
-                            }
-                            else
-                            {
-                                log('Unzipping ' + filename);
+                            if (err) return cb(err);
 
-                                var start = new Date();
+                            log('Unzipping ' + filename);
 
-                                zip.unzip(path, outputPath, function(err)
+                            var start = new Date();
+
+                            zip.unzip(path, outputPath, function(err)
+                            {
+                                if (err)
                                 {
-                                    if (err)
-                                    {
-                                        del.sync([outputPath]);
-                                        cb(err);
-                                    }
-                                    else
-                                    {
-                                        var totalMS = new Date().getTime() - start;
-                                        log('Done unzipping ' + filename + ', Took ' + humanizeDuration(totalMS));
-                                        cb();
-                                    }
+                                    del.sync([outputPath]);
+                                    cb(err);
+                                }
+                                else
+                                {
+                                    var totalMS = new Date().getTime() - start;
+                                    log('Done unzipping ' + filename + ', Took ' + humanizeDuration(totalMS));
+                                    cb();
+                                }
 
-                                });
-
-                            }
+                            });
 
                         });
 
@@ -349,15 +324,8 @@
                 {
                     unzipFile(filename, zip_file, zip_file_output, function(err)
                     {
-                        if (err)
-                        {
-                            buildDone(err);
-                        }
-                        else
-                        {
-                            step2('GeoIPASNum2v6.zip-check');
-                        }
-
+                        if (err) return buildDone(err);
+                        step2('GeoIPASNum2v6.zip-check');
                     });
 
                 }
@@ -381,15 +349,8 @@
                 {
                     unzipFile(filename, zip_file, zip_file_output, function(err)
                     {
-                        if (err)
-                        {
-                            buildDone(err);
-                        }
-                        else
-                        {
-                            step2('GeoLite2-City-CSV.zip-check');
-                        }
-
+                        if (err) return buildDone(err);
+                        step2('GeoLite2-City-CSV.zip-check');
                     });
 
                 }
@@ -413,41 +374,28 @@
                 {
                     unzipFile(filename, zip_file, zip_file_output, function(err)
                     {
-                        if (err)
+                        if (err) return buildDone(err);
+
+                        //load path as its one level deeper based on date
+                        fs.readdir(zip_file_output, function(err, files)
                         {
-                            buildDone(err);
-                        }
-                        else
-                        {
-                            //load path as its one level deeper based on date
-                            fs.readdir(zip_file_output, function(err, files)
+                            if (err) return buildDone(err);
+
+                            for (var i in files)
                             {
-                                if (err)
+                                var file = files[i];
+
+                                if (files[i].charAt(0) != '.')
                                 {
-                                    buildDone(err);
-                                }
-                                else
-                                {
-
-                                    for (var i in files)
-                                    {
-                                        var file = files[i];
-
-                                        if (files[i].charAt(0) != '.')
-                                        {
-                                            GeoLite2Path = path.join(zip_file_output, file);
-                                            break;
-                                        }
-
-                                    }
-
-                                    step3();
-
+                                    GeoLite2Path = path.join(zip_file_output, file);
+                                    break;
                                 }
 
-                            });
+                            }
 
-                        }
+                            step3();
+
+                        });
 
                     });
 
@@ -624,16 +572,10 @@
 
                 db.close(function(err)
                 {
-                    if (err)
-                    {
-                        buildDone(err);
-                    }
-                    else
-                    {
-                        db = new sqlite3.Database(dbFile);
-                        step3('vacuum');
-                    }
+                    if (err) return buildDone(err);
 
+                    db = new sqlite3.Database(dbFile);
+                    step3('vacuum');
                 });
 
             }
@@ -644,30 +586,17 @@
 
                 db.run('VACUUM', function(err)
                 {
-                    if (err)
+                    if (err) return buildDone(err);
+
+                    var totalMS = new Date().getTime() - vStart.getTime();
+                    log('Vacuuming Took ' + humanizeDuration(totalMS));
+                    log('Closing database...');
+
+                    db.close(function(err)
                     {
-                        buildDone(err);
-                    }
-                    else
-                    {
-                        var totalMS = new Date().getTime() - vStart.getTime();
-                        log('Vacuuming Took ' + humanizeDuration(totalMS));
-                        log('Closing database...');
-
-                        db.close(function(err)
-                        {
-                            if (err)
-                            {
-                                buildDone(err);
-                            }
-                            else
-                            {
-                                step3('cleanup');
-                            }
-
-                        });
-
-                    }
+                        if (err) return buildDone(err);
+                        step3('cleanup');
+                    });
 
                 });
 
@@ -676,18 +605,13 @@
             {
                 log('Cleaning up tmp files...');
 
-                del([tmpLoc], function(err) {
-                    if (err)
-                    {
-                        buildDone(err);
-                    }
-                    else
-                    {
-                        var totalMS = new Date().getTime() - startTime.getTime();
-                        log('Done Building Database - Took ' + humanizeDuration(totalMS));
-                        buildDone(null);
-                    }
+                del([tmpLoc], function(err)
+                {
+                    if (err) return buildDone(err);
 
+                    var totalMS = new Date().getTime() - startTime.getTime();
+                    log('Done Building Database - Took ' + humanizeDuration(totalMS));
+                    buildDone(null);
                 });
 
             }
@@ -717,29 +641,15 @@
 
                     }, function done(err)
                     {
-
                         createSchema(db, log, function(err)
                         {
-                            if (err)
-                            {
-                                buildDone(err);
-                            }
-                            else
-                            {
-                                db.run('INSERT INTO meta (id, val) VALUES (?, ?)', ['buildDate', startTime.toISOString()], function(err)
-                                {
-                                    if (err)
-                                    {
-                                        buildDone(err);
-                                    }
-                                    else
-                                    {
-                                        step3('GeoIPASNum2.csv');
-                                    }
+                            if (err) return buildDone(err);
 
-                                });
-
-                            }
+                            db.run('INSERT INTO meta (id, val) VALUES (?, ?)', ['buildDate', startTime.toISOString()], function(err)
+                            {
+                                if (err) return buildDone(err);
+                                step3('GeoIPASNum2.csv');
+                            });
 
                         });
 
@@ -784,11 +694,9 @@
 
             this.db.all(inParam('SELECT * from geo_names WHERE geoname_id in (?#)', ids), ids, function(err, geoname_rows)
             {
-                if (err)
-                {
-                    cb(err);
-                }
-                else if (geoname_rows.length > 0)
+                if (err) return cb(err);
+
+                if (geoname_rows.length > 0)
                 {
                     for (key in geoname_rows)
                     {
@@ -814,11 +722,9 @@
             {
                 this.db.all(inParam('SELECT * from geo_names WHERE geo_lookup in (?#)', ids), ids, function(err, geo_lookup_rows)
                 {
-                    if (err)
-                    {
-                        cb(err);
-                    }
-                    else if (geo_lookup_rows.length > 0)
+                    if (err) return cb(err);
+
+                    if (geo_lookup_rows.length > 0)
                     {
 
                         for (key in geo_lookup_rows)
@@ -859,11 +765,9 @@
 
             self.db.get("SELECT * FROM geo_blocks WHERE version = ? AND (? BETWEEN start AND end) ORDER BY start DESC, end ASC LIMIT 1", [version, pton], function(err, row)
             {
-                if (err)
-                {
-                    cb(err);
-                }
-                else if (row)
+                if (err) return cb(err);
+
+                if (row)
                 {
                     resultOutput.is_anonymous_proxy = row.is_anonymous_proxy;
                     resultOutput.is_satellite_provider = row.is_satellite_provider;
@@ -885,181 +789,171 @@
 
                     self._findGeonames(geonames, function(err, geonamesResult)
                     {
-                        if (err)
+                        if (err) return cb(err);
+
+                        var geoname_idResult = geonamesResult[row.geoname_id];
+
+                        if (geoname_idResult)
                         {
-                            cb(err);
+                            //continent
+                            resultOutput.continent = {
+                                geoname_id: continentCodeMap[geoname_idResult.continent_code],
+                                code: geoname_idResult.continent_code,
+                                _langLookup: self._setLangCode(langLookups, 'continent_name', geoname_idResult.continent_code)
+                            };
+
+                            //geo_lookup codes to lookup - country and subdivision_1_iso_code and subdivision_2_iso_code
+                            var geo_lookup = [];
+
+                            //country
+                            var countryLookupCode = '';
+                            if (geoname_idResult.country_iso_code && geoname_idResult.country_iso_code.length > 0) {
+                                countryLookupCode = [2, geoname_idResult.continent_code, geoname_idResult.country_iso_code].join('.');
+                                geo_lookup.push(countryLookupCode);
+                            }
+
+                            //subdivision_1_iso_code
+                            var subdivision1LookupCode = '';
+                            if (geoname_idResult.subdivision_1_iso_code && geoname_idResult.subdivision_1_iso_code.length > 0) {
+                                subdivision1LookupCode = [3, geoname_idResult.continent_code, geoname_idResult.country_iso_code, geoname_idResult.subdivision_1_iso_code].join('.');
+                                geo_lookup.push(subdivision1LookupCode);
+                            }
+
+                            //subdivision_2_iso_code
+                            var subdivision2LookupCode = '';
+                            if (geoname_idResult.subdivision_2_iso_code && geoname_idResult.subdivision_2_iso_code.length > 0) {
+                                subdivision2LookupCode = [4, geoname_idResult.continent_code, geoname_idResult.country_iso_code, geoname_idResult.subdivision_1_iso_code, geoname_idResult.subdivision_2_iso_code].join('.');
+                                geo_lookup.push(subdivision2LookupCode);
+                            }
+
+                            //Do database query
+                            self._findByGeoLookupCode(geo_lookup, function(err, geo_lookupResults)
+                            {
+                                if (err) return cb(err);
+
+                                //country data
+                                var countryMeta = geo_lookupResults[countryLookupCode];
+
+                                if (countryMeta)
+                                {
+                                    resultOutput.country = {
+                                        geoname_id: countryMeta.geoname_id,
+                                        iso_code: countryMeta.country_iso_code,
+                                        _langLookup: self._setLangCode(langLookups, 'country_name', [countryMeta.continent_code, countryMeta.country_iso_code].join('.'))
+                                    };
+
+                                }
+
+                                //city data
+                                if (geoname_idResult.type == 5)
+                                {
+                                    resultOutput.city = {
+                                        geoname_id: geoname_idResult.geoname_id,
+                                        _langLookup: self._setLangCode(langLookups, 'city_name', geoname_idResult.geoname_id)
+                                    };
+
+                                }
+
+                                //location data
+                                resultOutput.location = {
+                                    latitude: row.latitude,
+                                    longitude: row.latitude,
+                                    metro_code: geoname_idResult.metro_code,
+                                    time_zone: geoname_idResult.time_zone
+                                };
+
+                                //postal code
+                                resultOutput.postal = {
+                                    code: row.postal_code
+                                };
+
+                                //registered_country_geoname_id
+                                if (row.registered_country_geoname_id)
+                                {
+                                    var countryData = geonamesResult[row.registered_country_geoname_id];
+
+                                    if (countryData)
+                                    {
+                                        resultOutput.registered_country = {
+                                            geoname_id: countryData.geoname_id,
+                                            iso_code: countryData.country_iso_code,
+                                            _langLookup: self._setLangCode(langLookups, 'country_name', [countryData.continent_code, countryData.country_iso_code].join('.'))
+                                        };
+
+                                    }
+
+                                }
+
+                                //represented_country_geoname_id
+                                if (row.represented_country_geoname_id)
+                                {
+                                    var countryData = geonamesResult[row.represented_country_geoname_id];
+
+                                    if (countryData)
+                                    {
+                                        resultOutput.represented_country = {
+                                            geoname_id: countryData.geoname_id,
+                                            iso_code: countryData.country_iso_code,
+                                            _langLookup: self._setLangCode(langLookups, 'country_name', [countryData.continent_code, countryData.country_iso_code].join('.'))
+                                        };
+                                    }
+
+                                }
+
+                                //subdivisions
+                                //subdivision - 1
+                                if (subdivision1LookupCode.length > 0)
+                                {
+                                    var subdivisionData = geo_lookupResults[subdivision1LookupCode];
+
+                                    //process if a non null result
+                                    if (subdivisionData)
+                                    {
+                                        if (resultOutput.subdivisions === undefined) {resultOutput.subdivisions = [];}
+
+                                        ////push onto subdivisions
+                                        resultOutput.subdivisions.push({
+                                            geoname_id: subdivisionData.geoname_id,
+                                            iso_code: subdivisionData.subdivision_1_iso_code,
+                                            _langLookup: self._setLangCode(langLookups, 'subdivision_1_name', [subdivisionData.continent_code, subdivisionData.country_iso_code, subdivisionData.subdivision_1_iso_code].join('.'))
+                                        });
+
+                                    }
+
+                                }
+
+                                //subdivision - 2
+                                if (subdivision2LookupCode.length > 0)
+                                {
+                                    var subdivisionData = geo_lookupResults[subdivision2LookupCode];
+
+                                    //process if a non null result
+                                    if (subdivisionData)
+                                    {
+                                        if (resultOutput.subdivisions === undefined) {resultOutput.subdivisions = [];}
+
+                                        ////push onto subdivisions
+                                        resultOutput.subdivisions.push({
+                                            geoname_id: subdivisionData.geoname_id,
+                                            iso_code: subdivisionData.subdivision_2_iso_code,
+                                            _langLookup: self._setLangCode(langLookups, 'subdivision_2_name', [subdivisionData.continent_code, subdivisionData.country_iso_code, subdivisionData.subdivision_1_iso_code, subdivisionData.subdivision_2_iso_code].join('.'))
+                                        });
+
+                                    }
+
+                                }
+
+                                //Resolve Langauge Strings
+                                console.log(resultOutput);
+                                console.log(langLookups);
+
+
+                            });
+
                         }
                         else
                         {
-                            var geoname_idResult = geonamesResult[row.geoname_id];
-
-                            if (geoname_idResult)
-                            {
-                                //continent
-                                resultOutput.continent = {
-                                    geoname_id: continentCodeMap[geoname_idResult.continent_code],
-                                    code: geoname_idResult.continent_code,
-                                    _langLookup: self._setLangCode(langLookups, 'continent_name', geoname_idResult.continent_code)
-                                };
-
-                                //geo_lookup codes to lookup - country and subdivision_1_iso_code and subdivision_2_iso_code
-                                var geo_lookup = [];
-
-                                //country
-                                var countryLookupCode = '';
-                                if (geoname_idResult.country_iso_code && geoname_idResult.country_iso_code.length > 0) {
-                                    countryLookupCode = [2, geoname_idResult.continent_code, geoname_idResult.country_iso_code].join('.');
-                                    geo_lookup.push(countryLookupCode);
-                                }
-
-                                //subdivision_1_iso_code
-                                var subdivision1LookupCode = '';
-                                if (geoname_idResult.subdivision_1_iso_code && geoname_idResult.subdivision_1_iso_code.length > 0) {
-                                    subdivision1LookupCode = [3, geoname_idResult.continent_code, geoname_idResult.country_iso_code, geoname_idResult.subdivision_1_iso_code].join('.');
-                                    geo_lookup.push(subdivision1LookupCode);
-                                }
-
-                                //subdivision_2_iso_code
-                                var subdivision2LookupCode = '';
-                                if (geoname_idResult.subdivision_2_iso_code && geoname_idResult.subdivision_2_iso_code.length > 0) {
-                                    subdivision2LookupCode = [4, geoname_idResult.continent_code, geoname_idResult.country_iso_code, geoname_idResult.subdivision_1_iso_code, geoname_idResult.subdivision_2_iso_code].join('.');
-                                    geo_lookup.push(subdivision2LookupCode);
-                                }
-
-                                //Do database query
-                                self._findByGeoLookupCode(geo_lookup, function(err, geo_lookupResults)
-                                {
-                                    if (err)
-                                    {
-                                        cb(err);
-                                    }
-                                    else
-                                    {
-                                        //country data
-                                        var countryMeta = geo_lookupResults[countryLookupCode];
-
-                                        if (countryMeta)
-                                        {
-                                            resultOutput.country = {
-                                                geoname_id: countryMeta.geoname_id,
-                                                iso_code: countryMeta.country_iso_code,
-                                                _langLookup: self._setLangCode(langLookups, 'country_name', [countryMeta.continent_code, countryMeta.country_iso_code].join('.'))
-                                            };
-
-                                        }
-
-                                        //city data
-                                        if (geoname_idResult.type == 5)
-                                        {
-                                            resultOutput.city = {
-                                                geoname_id: geoname_idResult.geoname_id,
-                                                _langLookup: self._setLangCode(langLookups, 'city_name', geoname_idResult.geoname_id)
-                                            };
-
-                                        }
-
-                                        //location data
-                                        resultOutput.location = {
-                                            latitude: row.latitude,
-                                            longitude: row.latitude,
-                                            metro_code: geoname_idResult.metro_code,
-                                            time_zone: geoname_idResult.time_zone
-                                        };
-
-                                        //postal code
-                                        resultOutput.postal = {
-                                            code: row.postal_code
-                                        };
-
-                                        //registered_country_geoname_id
-                                        if (row.registered_country_geoname_id)
-                                        {
-                                            var countryData = geonamesResult[row.registered_country_geoname_id];
-
-                                            if (countryData)
-                                            {
-                                                resultOutput.registered_country = {
-                                                    geoname_id: countryData.geoname_id,
-                                                    iso_code: countryData.country_iso_code,
-                                                    _langLookup: self._setLangCode(langLookups, 'country_name', [countryData.continent_code, countryData.country_iso_code].join('.'))
-                                                };
-
-                                            }
-
-                                        }
-
-                                        //represented_country_geoname_id
-                                        if (row.represented_country_geoname_id)
-                                        {
-                                            var countryData = geonamesResult[row.represented_country_geoname_id];
-
-                                            if (countryData)
-                                            {
-                                                resultOutput.represented_country = {
-                                                    geoname_id: countryData.geoname_id,
-                                                    iso_code: countryData.country_iso_code,
-                                                    _langLookup: self._setLangCode(langLookups, 'country_name', [countryData.continent_code, countryData.country_iso_code].join('.'))
-                                                };
-                                            }
-
-                                        }
-
-                                        //subdivisions
-                                        //subdivision - 1
-                                        if (subdivision1LookupCode.length > 0)
-                                        {
-                                            var subdivisionData = geo_lookupResults[subdivision1LookupCode];
-
-                                            //process if a non null result
-                                            if (subdivisionData)
-                                            {
-                                                if (resultOutput.subdivisions === undefined) {resultOutput.subdivisions = [];}
-
-                                                ////push onto subdivisions
-                                                resultOutput.subdivisions.push({
-                                                    geoname_id: subdivisionData.geoname_id,
-                                                    iso_code: subdivisionData.subdivision_1_iso_code,
-                                                    _langLookup: self._setLangCode(langLookups, 'subdivision_1_name', [subdivisionData.continent_code, subdivisionData.country_iso_code, subdivisionData.subdivision_1_iso_code].join('.'))
-                                                });
-
-                                            }
-
-                                        }
-
-                                        //subdivision - 2
-                                        if (subdivision2LookupCode.length > 0)
-                                        {
-                                            var subdivisionData = geo_lookupResults[subdivision2LookupCode];
-
-                                            //process if a non null result
-                                            if (subdivisionData)
-                                            {
-                                                if (resultOutput.subdivisions === undefined) {resultOutput.subdivisions = [];}
-
-                                                ////push onto subdivisions
-                                                resultOutput.subdivisions.push({
-                                                    geoname_id: subdivisionData.geoname_id,
-                                                    iso_code: subdivisionData.subdivision_2_iso_code,
-                                                    _langLookup: self._setLangCode(langLookups, 'subdivision_2_name', [subdivisionData.continent_code, subdivisionData.country_iso_code, subdivisionData.subdivision_1_iso_code, subdivisionData.subdivision_2_iso_code].join('.'))
-                                                });
-
-                                            }
-
-                                        }
-
-                                        //Resolve Langauge Strings
-                                        console.log(resultOutput);
-                                        console.log(langLookups);
-                                    }
-
-                                });
-
-                            }
-                            else
-                            {
-                                cb(new Error('Geonames Not Found'));
-                            }
-
+                            cb(new Error('Geonames Not Found'));
                         }
 
                     });
@@ -1081,11 +975,9 @@
             {
                 var result = {ver: version};
 
-                if (err)
-                {
-                    cb(err);
-                }
-                else if (row)
+                if (err) return cb(err);
+
+                if (row)
                 {
                     result.asn = row.as_num;
                     result.name = row.name;
