@@ -23,7 +23,7 @@
 
     function inParam(sql, arr) //thanks https://github.com/mapbox/node-sqlite3/issues/527
     {
-      return sql.replace('?#', arr.map(()=> '?').join(','));
+      return sql.replace('?#', arr.map(()=> '?').join(',')); // jshint ignore:line
     }
 
     function buildDatabase(databaseLocation, options, buildDone, logCB)
@@ -306,11 +306,16 @@
             //Get GeoLite2 City from http://dev.maxmind.com/geoip/geoip2/geolite2/
             //Download http://geolite.maxmind.com/download/geoip/database/GeoLite2-City-CSV.zip for the rest of the data we need
 
+            var filename;
+            var zip_file;
+            var zip_file_output;
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             if (substep == 'GeoIPASNum2.zip-check' || substep == 'GeoIPASNum2.zip-download' || substep == 'GeoIPASNum2.zip-unzip')
             {
-                var filename = 'GeoIPASNum2.zip';
-                var zip_file = path.join(tmpLoc, 'GeoIPASNum2.zip');
-                var zip_file_output = path.join(unzippedFolders, 'ASN-v4');
+                filename = 'GeoIPASNum2.zip';
+                zip_file = path.join(tmpLoc, 'GeoIPASNum2.zip');
+                zip_file_output = path.join(unzippedFolders, 'ASN-v4');
 
                 if (substep == 'GeoIPASNum2.zip-check')
                 {
@@ -333,9 +338,9 @@
             }
             else if (substep == 'GeoIPASNum2v6.zip-check' || substep == 'GeoIPASNum2v6.zip-download' || substep == 'GeoIPASNum2v6.zip-unzip')
             {
-                var filename = 'GeoIPASNum2v6.zip';
-                var zip_file = path.join(tmpLoc, 'GeoIPASNum2v6.zip');
-                var zip_file_output = path.join(unzippedFolders, 'ASN-v6');
+                filename = 'GeoIPASNum2v6.zip';
+                zip_file = path.join(tmpLoc, 'GeoIPASNum2v6.zip');
+                zip_file_output = path.join(unzippedFolders, 'ASN-v6');
 
                 if (substep == 'GeoIPASNum2v6.zip-check')
                 {
@@ -358,9 +363,9 @@
             }
             else if (substep == 'GeoLite2-City-CSV.zip-check' || substep == 'GeoLite2-City-CSV.zip-download' || substep == 'GeoLite2-City-CSV.zip-unzip')
             {
-                var filename = 'GeoLite2-City-CSV.zip';
-                var zip_file = path.join(tmpLoc, 'GeoLite2-City-CSV.zip');
-                var zip_file_output = path.join(unzippedFolders, 'GeoLite2-City');
+                filename = 'GeoLite2-City-CSV.zip';
+                zip_file = path.join(tmpLoc, 'GeoLite2-City-CSV.zip');
+                zip_file_output = path.join(unzippedFolders, 'GeoLite2-City');
 
                 if (substep == 'GeoLite2-City-CSV.zip-check')
                 {
@@ -545,7 +550,7 @@
                             log('Imported files ' + filesProcessed + '/' + filesTotal);
                         }
 
-                        callback(err)
+                        callback(err);
                     });
 
                 }, function done(err)
@@ -686,7 +691,7 @@
                 return null;
             }
 
-        }
+        };
 
         geoIPClass.prototype._findGeonames = function(ids, cb)
         {
@@ -698,12 +703,12 @@
 
                 if (geoname_rows.length > 0)
                 {
-                    for (key in geoname_rows)
+                    for (var key in geoname_rows)
                     {
                         geonameData[geoname_rows[key].geoname_id] = geoname_rows[key];
                     }
 
-                    cb(null, geonameData)
+                    cb(null, geonameData);
                 }
                 else
                 {
@@ -712,7 +717,7 @@
 
             });
 
-        }
+        };
 
         geoIPClass.prototype._findByGeoLookupCode = function(ids, cb)
         {
@@ -727,7 +732,7 @@
                     if (geo_lookup_rows.length > 0)
                     {
 
-                        for (key in geo_lookup_rows)
+                        for (var key in geo_lookup_rows)
                         {
                             geo_lookupData[geo_lookup_rows[key].geo_lookup] = geo_lookup_rows[key];
                         }
@@ -747,20 +752,24 @@
                 cb(null, geo_lookupData);
             }
 
-        }
+        };
 
         geoIPClass.prototype._setLangCode = function(obj, field, code)
         {
             var langLookupIndent = field + '.' + code;
             obj[langLookupIndent] = [field, code];
             return langLookupIndent;
-        }
+        };
 
-        geoIPClass.prototype._findLoc = function(ipAddr, version, pton, cb)
+        geoIPClass.prototype._findLoc = function(ipAddr, version, isPrivate, pton, cb)
         {
             var self = this;
 
-            var resultOutput = {ver: version};
+            var resultOutput = {
+                ver: version,
+                is_private: isPrivate
+            };
+
             var langLookups = {};
 
             self.db.get("SELECT * FROM geo_blocks WHERE version = ? AND (? BETWEEN start AND end) ORDER BY start DESC, end ASC LIMIT 1", [version, pton], function(err, row)
@@ -882,14 +891,14 @@
                                 //registered_country_geoname_id
                                 if (row.registered_country_geoname_id)
                                 {
-                                    var countryData = geonamesResult[row.registered_country_geoname_id];
+                                    var registered_countryData = geonamesResult[row.registered_country_geoname_id];
 
-                                    if (countryData)
+                                    if (registered_countryData)
                                     {
                                         resultOutput.registered_country = {
-                                            geoname_id: countryData.geoname_id,
-                                            iso_code: countryData.country_iso_code,
-                                            _langLookup: self._setLangCode(langLookups, 'country_name', [countryData.continent_code, countryData.country_iso_code].join('.'))
+                                            geoname_id: registered_countryData.geoname_id,
+                                            iso_code: registered_countryData.country_iso_code,
+                                            _langLookup: self._setLangCode(langLookups, 'country_name', [registered_countryData.continent_code, registered_countryData.country_iso_code].join('.'))
                                         };
 
                                     }
@@ -899,14 +908,14 @@
                                 //represented_country_geoname_id
                                 if (row.represented_country_geoname_id)
                                 {
-                                    var countryData = geonamesResult[row.represented_country_geoname_id];
+                                    var represented_countryData = geonamesResult[row.represented_country_geoname_id];
 
-                                    if (countryData)
+                                    if (represented_countryData)
                                     {
                                         resultOutput.represented_country = {
-                                            geoname_id: countryData.geoname_id,
-                                            iso_code: countryData.country_iso_code,
-                                            _langLookup: self._setLangCode(langLookups, 'country_name', [countryData.continent_code, countryData.country_iso_code].join('.'))
+                                            geoname_id: represented_countryData.geoname_id,
+                                            iso_code: represented_countryData.country_iso_code,
+                                            _langLookup: self._setLangCode(langLookups, 'country_name', [represented_countryData.continent_code, represented_countryData.country_iso_code].join('.'))
                                         };
                                     }
 
@@ -937,18 +946,18 @@
                                 //subdivision - 2
                                 if (subdivision2LookupCode.length > 0)
                                 {
-                                    var subdivisionData = geo_lookupResults[subdivision2LookupCode];
+                                    var subdivision2Data = geo_lookupResults[subdivision2LookupCode];
 
                                     if (resultOutput.subdivisions === undefined) {resultOutput.subdivisions = [];}
 
                                     //process if a non null result
-                                    if (subdivisionData)
+                                    if (subdivision2Data)
                                     {
                                         ////push onto subdivisions
                                         resultOutput.subdivisions.push({
-                                            geoname_id: subdivisionData.geoname_id,
-                                            iso_code: subdivisionData.subdivision_2_iso_code,
-                                            _langLookup: self._setLangCode(langLookups, 'subdivision_2_name', [subdivisionData.continent_code, subdivisionData.country_iso_code, subdivisionData.subdivision_1_iso_code, subdivisionData.subdivision_2_iso_code].join('.'))
+                                            geoname_id: subdivision2Data.geoname_id,
+                                            iso_code: subdivision2Data.subdivision_2_iso_code,
+                                            _langLookup: self._setLangCode(langLookups, 'subdivision_2_name', [subdivision2Data.continent_code, subdivision2Data.country_iso_code, subdivision2Data.subdivision_1_iso_code, subdivision2Data.subdivision_2_iso_code].join('.'))
                                         });
 
                                     }
@@ -995,14 +1004,14 @@
                                     {
                                         if (resultOutput[key2] && typeof resultOutput[key2] == 'object' && typeof resultOutput[key2]._langLookup == 'string')
                                         {
-                                            var langData = langLookupsINList_results[resultOutput[key2]._langLookup];
+                                            var langData2 = langLookupsINList_results[resultOutput[key2]._langLookup];
 
-                                            if (langData)
+                                            if (langData2)
                                             {
                                                 delete resultOutput[key2]._langLookup;
 
-                                                resultOutput[key2].name = langData.en;
-                                                resultOutput[key2].names = langData;
+                                                resultOutput[key2].name = langData2.en;
+                                                resultOutput[key2].names = langData2;
                                             }
                                             else
                                             {
@@ -1017,14 +1026,14 @@
                                     {
                                         for (var key3 in resultOutput.subdivisions)
                                         {
-                                            var langData = langLookupsINList_results[resultOutput.subdivisions[key3]._langLookup];
+                                            var langData3 = langLookupsINList_results[resultOutput.subdivisions[key3]._langLookup];
 
-                                            if (langData)
+                                            if (langData3)
                                             {
                                                 delete resultOutput.subdivisions[key3]._langLookup;
 
-                                                resultOutput.subdivisions[key3].name = langData.en;
-                                                resultOutput.subdivisions[key3].names = langData;
+                                                resultOutput.subdivisions[key3].name = langData3.en;
+                                                resultOutput.subdivisions[key3].names = langData3;
                                             }
                                             else
                                             {
@@ -1056,14 +1065,17 @@
 
             });
 
-        }
+        };
 
-        geoIPClass.prototype._findISP = function(ipAddr, version, pton, cb)
+        geoIPClass.prototype._findISP = function(ipAddr, version, isPrivate, pton, cb)
         {
 
             this.db.get("SELECT * FROM asn WHERE version = ? AND (? BETWEEN start AND end) ORDER BY start DESC, end ASC LIMIT 1", [version, pton], function(err, row)
             {
-                var result = {ver: version};
+                var result = {
+                    ver: version,
+                    is_private: isPrivate
+                };
 
                 if (err) return cb(err);
 
@@ -1080,18 +1092,20 @@
 
             });
 
-        }
+        };
 
         /////////////////////////////////////////////////////////////////
         geoIPClass.prototype.findLoc = function(ipAddr, cb)
         {
             if (typeof ipAddr == 'string' && ipAddr.length > 0)
             {
+                ipAddr = ipAddr.toLowerCase();
                 var ver = this._ipVer(ipAddr);
 
                 if (ver > 0)
                 {
-                    this._findLoc(ipAddr, ver, inet_pton(ipAddr), cb);
+                    var isPrivate = ip.isPrivate(ipAddr);
+                    this._findLoc(ipAddr, ver, isPrivate, inet_pton(ipAddr), cb);
                 }
                 else //Bad IP format
                 {
@@ -1104,17 +1118,19 @@
                 cb(new Error('Non string IP Address or Empty'));
             }
 
-        }
+        };
 
         geoIPClass.prototype.findISP = function(ipAddr, cb)
         {
             if (typeof ipAddr == 'string' && ipAddr.length > 0)
             {
+                ipAddr = ipAddr.toLowerCase();
                 var ver = this._ipVer(ipAddr);
 
                 if (ver > 0)
                 {
-                    this._findISP(ipAddr, ver, inet_pton(ipAddr), cb);
+                    var isPrivate = ip.isPrivate(ipAddr);
+                    this._findISP(ipAddr, ver, isPrivate, inet_pton(ipAddr), cb);
                 }
                 else //Bad IP format
                 {
@@ -1127,17 +1143,100 @@
                 cb(new Error('Non string IP Address or Empty'));
             }
 
-        }
+        };
 
         geoIPClass.prototype.find = function(ipAddr, cb) //find both
         {
-            //todo ...
-        }
+            var self = this;
+
+            if (typeof ipAddr == 'string' && ipAddr.length > 0)
+            {
+                ipAddr = ipAddr.toLowerCase();
+                var ver = this._ipVer(ipAddr);
+
+                if (ver > 0)
+                {
+                    var isPrivate = ip.isPrivate(ipAddr);
+
+                    var findLocFound = false;
+                    var findISPFound = false;
+
+                    var findLocResult = {};
+                    var findISPResult = {};
+
+                    //Do async parallel on these and then merge results
+                    async.parallel([
+                        function(callback)
+                        {
+                            self._findLoc(ipAddr, ver, isPrivate, inet_pton(ipAddr), function(err, found, result)
+                            {
+                                if (err) return callback(err);
+                                findLocFound = found;
+                                findLocResult = result;
+                                callback();
+                            });
+                        },
+                        function(callback)
+                        {
+                            self._findISP(ipAddr, ver, isPrivate, inet_pton(ipAddr), function(err, found, result)
+                            {
+                                if (err) return callback(err);
+                                findISPFound = found;
+                                findISPResult = result;
+                                callback();
+                            });
+                        }
+                    ], function(err, results)
+                    {
+                        //was anything found?
+                        var anyFound = false;
+
+                        if (findLocFound)
+                        {
+                            anyFound = findLocFound;
+                        }
+
+                        if (findISPFound)
+                        {
+                            anyFound = findISPFound;
+
+                            findLocResult.isp = {
+                                asn: findISPResult.asn,
+                                name: findISPResult.name
+                            };
+
+                        }
+
+                        cb(null, anyFound, findLocResult);
+
+                    });
+
+                }
+                else //Bad IP format
+                {
+                    cb(new Error('Bad IP format'));
+                }
+
+            }
+            else
+            {
+                cb(new Error('Non string IP Address or Empty'));
+            }
+
+        };
 
         geoIPClass.prototype.close = function(cb)
         {
-            (typeof cb == 'function') ? this.db.close(cb) : this.db.close();
-        }
+            if (typeof cb == 'function')
+            {
+                this.db.close(cb);
+            }
+            else
+            {
+                this.db.close();
+            }
+
+        };
 
         return new geoIPClass((typeof openCB == 'function') ? new sqlite3.Database(dbFile, sqlite3.OPEN_READONLY, openCB) : new sqlite3.Database(dbFile, sqlite3.OPEN_READONLY));
     }

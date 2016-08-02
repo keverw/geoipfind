@@ -17,6 +17,8 @@ I found tons of modules for GEO Location but searching "geolocation ISP" and "ge
     - [Database Build Times](#database-build-times)
 - [geoIP](#geoip)
   - [findISP](#findisp)
+  - [findLoc](#findloc)
+  - [find](#find)
   - [Close](#close)
 - [License](#license)
 
@@ -95,6 +97,7 @@ if found the object looks like:
 
 ```
 { ver: 4,
+  is_private: false,
   asn: 'AS10796',
   name: 'Time Warner Cable Internet LLC' }
 ```
@@ -117,6 +120,7 @@ When a result is found, it returns a result like this:
 
 ```
 null true { ver: 4,
+  is_private: false,
   is_anonymous_proxy: 0,
   is_satellite_provider: 0,
   continent:
@@ -188,6 +192,7 @@ OR
 
 ```
 null true { ver: 6,
+  is_private: false,
   is_anonymous_proxy: 0,
   is_satellite_provider: 0,
   continent:
@@ -230,6 +235,80 @@ null true { ver: 6,
         'pt-BR': 'Estados Unidos',
         ru: 'США',
         'zh-CN': '美国' } } }
+```
+
+### find
+
+Same as find but also includes a `isp` key to the object if a result is found.
+```
+null true { ver: 4,
+  is_private: false,
+  is_anonymous_proxy: 0,
+  is_satellite_provider: 0,
+  continent:
+   { geoname_id: 6255149,
+     code: 'NA',
+     name: 'North America',
+     names:
+      { de: 'Nordamerika',
+        en: 'North America',
+        es: 'Norteamérica',
+        fr: 'Amérique du Nord',
+        ja: '北アメリカ',
+        'pt-BR': 'América do Norte',
+        ru: 'Северная Америка',
+        'zh-CN': '北美洲' } },
+  country:
+   { geoname_id: 6252001,
+     iso_code: 'US',
+     name: 'United States',
+     names:
+      { de: 'USA',
+        en: 'United States',
+        es: 'Estados Unidos',
+        fr: 'États-Unis',
+        ja: 'アメリカ合衆国',
+        'pt-BR': 'Estados Unidos',
+        ru: 'США',
+        'zh-CN': '美国' } },
+  city:
+   { geoname_id: 5375480,
+     name: 'Mountain View',
+     names:
+      { de: 'Mountain View',
+        en: 'Mountain View',
+        es: null,
+        fr: 'Mountain View',
+        ja: 'マウンテンビュー',
+        'pt-BR': null,
+        ru: 'Маунтин-Вью',
+        'zh-CN': '芒廷维尤' } },
+  location:
+   { accuracy_radius: 1000,
+     latitude: 37.386,
+     longitude: 37.386,
+     metro_code: '807',
+     time_zone: 'America/Los_Angeles' },
+  postal: { code: '94035' },
+  registered_country:
+   { geoname_id: 6252001,
+     iso_code: 'US',
+     name: 'United States',
+     names:
+      { de: 'USA',
+        en: 'United States',
+        es: 'Estados Unidos',
+        fr: 'États-Unis',
+        ja: 'アメリカ合衆国',
+        'pt-BR': 'Estados Unidos',
+        ru: 'США',
+        'zh-CN': '美国' } },
+  subdivisions:
+   [ { geoname_id: 5332921,
+       iso_code: 'CA',
+       name: 'California',
+       names: [Object] } ],
+  isp: { asn: 'AS15169', name: 'Google Inc.' } }
 ```
 
 ### Close

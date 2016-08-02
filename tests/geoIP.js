@@ -7,13 +7,20 @@ var geoIP = geoipfind.geoIP('./db');
 //     console.log(err);
 // });
 
+//findISP
 // geoIP.findISP('127.0.0.1', function(err, found, result)
 // {
 //     console.log(err, found, result);
 // });
 
 //findLoc
-geoIP.findLoc('8.8.8.8', function(err, found, result)
+// geoIP.findLoc('8.8.8.8', function(err, found, result)
+// {
+//     console.log(err, found, result);
+// });
+
+//find
+geoIP.find('8.8.8.8', function(err, found, result)
 {
     console.log(err, found, result);
 });
