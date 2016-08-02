@@ -856,16 +856,28 @@
 
                                 //location data
                                 resultOutput.location = {
+                                    accuracy_radius: row.accuracy_radius,
                                     latitude: row.latitude,
-                                    longitude: row.latitude,
-                                    metro_code: geoname_idResult.metro_code,
-                                    time_zone: geoname_idResult.time_zone
+                                    longitude: row.latitude
                                 };
 
+                                if (geoname_idResult.metro_code.length > 0)
+                                {
+                                    resultOutput.location.metro_code = geoname_idResult.metro_code;
+                                }
+
+                                if (geoname_idResult.time_zone.length > 0)
+                                {
+                                    resultOutput.location.time_zone = geoname_idResult.time_zone;
+                                }
+
                                 //postal code
-                                resultOutput.postal = {
-                                    code: row.postal_code
-                                };
+                                if (row.postal_code.length > 0)
+                                {
+                                    resultOutput.postal = {
+                                        code: row.postal_code
+                                    };
+                                }
 
                                 //registered_country_geoname_id
                                 if (row.registered_country_geoname_id)
@@ -927,11 +939,11 @@
                                 {
                                     var subdivisionData = geo_lookupResults[subdivision2LookupCode];
 
+                                    if (resultOutput.subdivisions === undefined) {resultOutput.subdivisions = [];}
+
                                     //process if a non null result
                                     if (subdivisionData)
                                     {
-                                        if (resultOutput.subdivisions === undefined) {resultOutput.subdivisions = [];}
-
                                         ////push onto subdivisions
                                         resultOutput.subdivisions.push({
                                             geoname_id: subdivisionData.geoname_id,
@@ -940,12 +952,21 @@
                                         });
 
                                     }
+                                    else //no geoname_id found, failback to iso_code and name only
+                                    {
+                                        ////push onto subdivisions
+                                        resultOutput.subdivisions.push({
+                                            iso_code: geoname_idResult.subdivision_2_iso_code,
+                                            _langLookup: self._setLangCode(langLookups, 'subdivision_2_name', [geoname_idResult.continent_code, geoname_idResult.country_iso_code, geoname_idResult.subdivision_1_iso_code, geoname_idResult.subdivision_2_iso_code].join('.'))
+                                        });
+
+                                    }
 
                                 }
 
                                 //Resolve Langauge Strings
                                 var langLookupsINList = [];
-                                
+
                                 for (var key in langLookups)
                                 {
                                     langLookupsINList.push(langLookups[key][1]);
@@ -1062,12 +1083,6 @@
         }
 
         /////////////////////////////////////////////////////////////////
-        geoIPClass.prototype.findGeoname = function(id, cb)
-        {
-            //todo: probably support list too.
-            //todo ...
-        }
-
         geoIPClass.prototype.findLoc = function(ipAddr, cb)
         {
             if (typeof ipAddr == 'string' && ipAddr.length > 0)

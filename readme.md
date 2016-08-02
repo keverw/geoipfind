@@ -101,6 +101,137 @@ if found the object looks like:
 
 If not found it will return a object with ver only.
 
+### findLoc
+Look up a location for a IP address.
+
+```js
+geoIP.findLoc('IP Address Here', function(err, found, result)
+{
+    console.log(err, found, result);
+});
+```
+
+Note: that not all records have city, subdivisions, postal_code, time_zone, etc records especially IPv6 at this point. So before reading something, you should check for it. Also not all records such as subdivision2 returns a geoname_id
+
+When a result is found, it returns a result like this:
+
+```
+null true { ver: 4,
+  is_anonymous_proxy: 0,
+  is_satellite_provider: 0,
+  continent:
+   { geoname_id: 6255149,
+     code: 'NA',
+     name: 'North America',
+     names:
+      { de: 'Nordamerika',
+        en: 'North America',
+        es: 'Norteamérica',
+        fr: 'Amérique du Nord',
+        ja: '北アメリカ',
+        'pt-BR': 'América do Norte',
+        ru: 'Северная Америка',
+        'zh-CN': '北美洲' } },
+  country:
+   { geoname_id: 6252001,
+     iso_code: 'US',
+     name: 'United States',
+     names:
+      { de: 'USA',
+        en: 'United States',
+        es: 'Estados Unidos',
+        fr: 'États-Unis',
+        ja: 'アメリカ合衆国',
+        'pt-BR': 'Estados Unidos',
+        ru: 'США',
+        'zh-CN': '美国' } },
+  city:
+   { geoname_id: 5375480,
+     name: 'Mountain View',
+     names:
+      { de: 'Mountain View',
+        en: 'Mountain View',
+        es: null,
+        fr: 'Mountain View',
+        ja: 'マウンテンビュー',
+        'pt-BR': null,
+        ru: 'Маунтин-Вью',
+        'zh-CN': '芒廷维尤' } },
+  location:
+   { accuracy_radius: 1000,
+     latitude: 37.386,
+     longitude: 37.386,
+     metro_code: '807',
+     time_zone: 'America/Los_Angeles' },
+  postal: { code: '94035' },
+  registered_country:
+   { geoname_id: 6252001,
+     iso_code: 'US',
+     name: 'United States',
+     names:
+      { de: 'USA',
+        en: 'United States',
+        es: 'Estados Unidos',
+        fr: 'États-Unis',
+        ja: 'アメリカ合衆国',
+        'pt-BR': 'Estados Unidos',
+        ru: 'США',
+        'zh-CN': '美国' } },
+  subdivisions:
+   [ { geoname_id: 5332921,
+       iso_code: 'CA',
+       name: 'California',
+       names: [Object] } ] }
+```
+
+OR
+
+```
+null true { ver: 6,
+  is_anonymous_proxy: 0,
+  is_satellite_provider: 0,
+  continent:
+   { geoname_id: 6255149,
+     code: 'NA',
+     name: 'North America',
+     names:
+      { de: 'Nordamerika',
+        en: 'North America',
+        es: 'Norteamérica',
+        fr: 'Amérique du Nord',
+        ja: '北アメリカ',
+        'pt-BR': 'América do Norte',
+        ru: 'Северная Америка',
+        'zh-CN': '北美洲' } },
+  country:
+   { geoname_id: 6252001,
+     iso_code: 'US',
+     name: 'United States',
+     names:
+      { de: 'USA',
+        en: 'United States',
+        es: 'Estados Unidos',
+        fr: 'États-Unis',
+        ja: 'アメリカ合衆国',
+        'pt-BR': 'Estados Unidos',
+        ru: 'США',
+        'zh-CN': '美国' } },
+  location: { accuracy_radius: 100, latitude: 39.76, longitude: 39.76 },
+  registered_country:
+   { geoname_id: 6252001,
+     iso_code: 'US',
+     name: 'United States',
+     names:
+      { de: 'USA',
+        en: 'United States',
+        es: 'Estados Unidos',
+        fr: 'États-Unis',
+        ja: 'アメリカ合衆国',
+        'pt-BR': 'Estados Unidos',
+        ru: 'США',
+        'zh-CN': '美国' } } }
+```
+
 ### Close
 Closes the database. Callback is optional
 
