@@ -1,5 +1,3 @@
-# Warning: This is a work in progress and not ready yet for release.
-
 # GeoIPFind v0.0.1
 [![npm version](https://badge.fury.io/js/geoipfind.svg)](https://badge.fury.io/js/geoipfind) &nbsp; [![Build Status](https://travis-ci.org/keverw/geoipfind.svg?branch=master)](https://travis-ci.org/keverw/geoipfind)
 
@@ -51,18 +49,23 @@ On Windows 7 or earlier, you will need to install these manually in order for
 
 On `*nix` based operating systems make sure you have a unzip command line tool installed.
 
+When installing on Ubuntu make sure the nodejs path is set so SQLite will be built. Make sure there's also a unzip command.
+
+apt-get install git nodejs npm unzip
+sudo ln -fs /usr/bin/nodejs /usr/local/bin/node
+
 ### options
 * `verbose`: To output to the console, defaults to true
 * `memory`: When set to a truthy value, to will set SQLite to work in memory. Defaults to true
 
 #### Database Build Times
 
-Once the database is done building, it will created a 545 MB file, this file will probably grow over time if data is added to the sources over time upon future rebuilds. It took about 27 minutes on my MacBook Node v4.4.5. You should obviously have a couple of gigabytes to build the database.
+Once the database is done building, it will created a 839.8 MB file, this file will probably grow over time if data is added to the sources over time upon future rebuilds. It took about 37 minutes on my MacBook Node v4.4.5. You should obviously have a couple of gigabytes to build the database.
 
-I also tested on a 2GB Linode and it took 19 minutes using Ubuntu 16.04 x64 in Frankfurt with Node v4.2.6.
-I also tested on a 2GB Digital Ocean Droplet using Ubuntu 16.04 x64 in Frankfurt and it took 28 minutes with Node v4.2.6.
+I also tested on a 2GB Linode and it took 28 minutes using Ubuntu 16.04 x64 in Frankfurt with Node v4.2.6.
+I also tested on a 2GB Digital Ocean Droplet using Ubuntu 16.04 x64 in Frankfurt and it took 36 minutes with Node v4.2.6.
 
-In my build, it created 5,531,101 records. So the average time per record across all 3 tests would be 267 microseconds. So about 3.4 every millisecond or 3,414 every second to put things into perspective. So I'd say the build time is pretty reasonable at this point considering this is single threaded and this isn't a daily thing to run. Consider it to be comparable to compiling a large C or C++ program.
+In my build, it created 7,264,019 records. So the average time per record created across all 3 tests would be 3,669 every second to put things into perspective. So I'd say the build time is pretty reasonable at this point considering this is single threaded and this isn't a daily thing to run. Consider it to be comparable to compiling a large C or C++ program.
 
 ## geoIP
 `geoIP(databaseLocation)`
