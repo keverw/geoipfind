@@ -1,4 +1,4 @@
-# GeoIPFind v0.0.2
+# GeoIPFind v0.0.3
 [![npm version](https://badge.fury.io/js/geoipfind.svg)](https://badge.fury.io/js/geoipfind) &nbsp; [![Build Status](https://travis-ci.org/keverw/geoipfind.svg?branch=master)](https://travis-ci.org/keverw/geoipfind)
 
 Simple IP-based geolocation lookup for ISP, country, city, timezone, etc. This has two parts: buildDatabase which downloads the data and builds a self-containing database. Secondly, it has lookup functions to query this database. So once the database is successfully built, you don't have to rely on any third parties.

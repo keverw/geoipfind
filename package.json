@@ -2,7 +2,7 @@
   "author": "Kevin Whitman (https://github.com/keverw)",
   "name": "geoipfind",
   "description": "Simple IP based geolocation lookup for ISP, country, city, timezone, etc.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "keywords": ["asn", "city", "country", "geo", "geo ip", "geo location ISP", "geo lookup", "geoip", "geoip2", "GeoIP2 Lite", "geolite", "geolocation", "geolocation ISP", "geolookup", "ip", "ip lookup", "iplookup", "IPv4", "IPv6", "ISP", "ISP geo", "location ISP", "maxmind", "region", "time zone", "timezone"],
   "dependencies": {
     "async": "^2.0.1",

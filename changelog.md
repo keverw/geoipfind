@@ -15,3 +15,6 @@
 
 ## 0.0.2 (Aug 3, 2016)
 Removed unused package
+
+## 0.0.3 (Aug 6, 2016)
+Linted Code
