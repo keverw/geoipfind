@@ -388,12 +388,16 @@
 
                             for (var i in files)
                             {
-                                var file = files[i];
-
-                                if (files[i].charAt(0) != '.')
+                                if (files.hasOwnProperty(i))
                                 {
-                                    GeoLite2Path = path.join(zip_file_output, file);
-                                    break;
+                                    var file = files[i];
+
+                                    if (files[i].charAt(0) != '.')
+                                    {
+                                        GeoLite2Path = path.join(zip_file_output, file);
+                                        break;
+                                    }
+
                                 }
 
                             }
@@ -705,7 +709,11 @@
                 {
                     for (var key in geoname_rows)
                     {
-                        geonameData[geoname_rows[key].geoname_id] = geoname_rows[key];
+                        if (geoname_rows.hasOwnProperty(key))
+                        {
+                            geonameData[geoname_rows[key].geoname_id] = geoname_rows[key];
+                        }
+
                     }
 
                     cb(null, geonameData);
@@ -721,7 +729,7 @@
 
         geoIPClass.prototype._findByGeoLookupCode = function(ids, cb)
         {
-            geo_lookupData = {};
+            var geo_lookupData = {};
 
             if (ids.length > 0)
             {
@@ -734,7 +742,11 @@
 
                         for (var key in geo_lookup_rows)
                         {
-                            geo_lookupData[geo_lookup_rows[key].geo_lookup] = geo_lookup_rows[key];
+                            if (geo_lookup_rows.hasOwnProperty(key))
+                            {
+                                geo_lookupData[geo_lookup_rows[key].geo_lookup] = geo_lookup_rows[key];
+                            }
+
                         }
 
                         cb(null, geo_lookupData);
@@ -978,24 +990,32 @@
 
                                 for (var key in langLookups)
                                 {
-                                    langLookupsINList.push(langLookups[key][1]);
+                                    if (langLookups.hasOwnProperty(key))
+                                    {
+                                        langLookupsINList.push(langLookups[key][1]);
+                                    }
+
                                 }
 
-                                langLookupsINList_results = {};
+                                var langLookupsINList_results = {};
                                 self.db.all(inParam('SELECT * FROM lang WHERE lookup_code in (?#)', langLookupsINList), langLookupsINList, function(err, langLookups_rows)
                                 {
                                     if (err) return cb(err);
 
                                     for (var key in langLookups_rows)
                                     {
-                                        var data = langLookups_rows[key];
-                                        var lookup_code = data.field + '.' + data.lookup_code;
+                                        if (langLookups_rows.hasOwnProperty(key))
+                                        {
+                                            var data = langLookups_rows[key];
+                                            var lookup_code = data.field + '.' + data.lookup_code;
 
-                                        delete data.field;
-                                        delete data.code;
-                                        delete data.lookup_code;
+                                            delete data.field;
+                                            delete data.code;
+                                            delete data.lookup_code;
 
-                                        langLookupsINList_results[lookup_code] = data;
+                                            langLookupsINList_results[lookup_code] = data;
+                                        }
+
                                     }
 
                                     ////////////////////////////////////////////////////////////////
@@ -1026,18 +1046,22 @@
                                     {
                                         for (var key3 in resultOutput.subdivisions)
                                         {
-                                            var langData3 = langLookupsINList_results[resultOutput.subdivisions[key3]._langLookup];
-
-                                            if (langData3)
+                                            if (resultOutput.subdivisions.hasOwnProperty(key3))
                                             {
-                                                delete resultOutput.subdivisions[key3]._langLookup;
+                                                var langData3 = langLookupsINList_results[resultOutput.subdivisions[key3]._langLookup];
 
-                                                resultOutput.subdivisions[key3].name = langData3.en;
-                                                resultOutput.subdivisions[key3].names = langData3;
-                                            }
-                                            else
-                                            {
-                                                return cb('Missing lang data');
+                                                if (langData3)
+                                                {
+                                                    delete resultOutput.subdivisions[key3]._langLookup;
+
+                                                    resultOutput.subdivisions[key3].name = langData3.en;
+                                                    resultOutput.subdivisions[key3].names = langData3;
+                                                }
+                                                else
+                                                {
+                                                    return cb('Missing lang data');
+                                                }
+                                                    
                                             }
 
                                         }
