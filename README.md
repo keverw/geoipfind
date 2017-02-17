@@ -1,4 +1,4 @@
-# GeoIPFind v0.0.4
+# GeoIPFind v0.0.5
 [![npm version](https://badge.fury.io/js/geoipfind.svg)](https://badge.fury.io/js/geoipfind) &nbsp; [![Build Status](https://travis-ci.org/keverw/geoipfind.svg?branch=master)](https://travis-ci.org/keverw/geoipfind)
 
 Simple IP-based geolocation lookup for ISP, country, city, timezone, etc. This has two parts: buildDatabase which downloads the data and builds a self-containing database. Secondly, it has lookup functions to query this database. So once the database is successfully built, you don't have to rely on any third parties.
@@ -331,7 +331,7 @@ geoIP.close(function(err)
 ```
 
 ## License
-This module(the code) itself is under BSD license like I usually use.
+This module(the code) itself is under the ISC license. You can view a copy of it in the LICENSE.md file.
 
 However, when building the database it makes use of the [GeoLite ASN and GeoLite ASN IPv6 databases](http://dev.maxmind.com/geoip/legacy/geolite/) from MaxMind. Along with the [GeoLite2 City](http://dev.maxmind.com/geoip/geoip2/geolite2/) database. Both which are under the [Creative Commons Attribution-ShareAlike 4.0 International License](http://creativecommons.org/licenses/by-sa/4.0/). Also geolite2 includes GeoNames data
 
