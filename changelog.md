@@ -18,3 +18,7 @@ Removed unused package
 
 ## 0.0.3 (Aug 6, 2016)
 Linted Code
+
+## 0.0.4 (Feb 17, 2017)
+Fixed Issue #1
+Switched to ISC license because it's a bit shorter

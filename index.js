@@ -879,7 +879,7 @@
                                 resultOutput.location = {
                                     accuracy_radius: row.accuracy_radius,
                                     latitude: row.latitude,
-                                    longitude: row.latitude
+                                    longitude: row.longitude
                                 };
 
                                 if (geoname_idResult.metro_code.length > 0)
